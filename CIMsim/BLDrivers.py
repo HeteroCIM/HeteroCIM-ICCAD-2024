@@ -5,10 +5,12 @@ class DAC():
         config.read(config_path)
         assert config_path != "", "cannot find config file!"
         self.power = config.getfloat("DAC", "power")
-        self.bandwisample_ratedth = config.getfloat("DAC", "sample_rate")
-        self.bandwidth = config.getint("DAC", "precision")
-    
-        self.convert_latency = 1 / self.sample_rate * (self.precision + 2)
+        self.sample_rate = config.getfloat("DAC", "sample_rate")
+        self.precision = config.getint("DAC", "precision")
+        if config.has_option("DAC", "latency"):
+            self.convert_latency = config.getint("DAC", "latency")
+        else:
+            self.convert_latency = 1 / self.sample_rate * (self.precision + 2)
         self.convert_energy = self.convert_latency * self.power
     def convert(self):
         return self.convert_latency, self.convert_energy

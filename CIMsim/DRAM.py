@@ -1,6 +1,6 @@
 import configparser as cp
 class DRAM():
-    def __init__(self, config_path = ""):
+    def __init__(self, name, config_path = ""):
         # default: bandwidth 19.2GB/s (DDR4) 
         assert config_path != "", "cannot find config file!"
         config = cp.ConfigParser()

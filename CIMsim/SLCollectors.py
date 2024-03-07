@@ -5,10 +5,13 @@ class ADC():
         config.read(config_path)
         assert config_path != "", "cannot find config file!"
         self.power = config.getfloat("ADC", "power")
-        self.bandwisample_ratedth = config.getfloat("ADC", "sample_rate")
-        self.bandwidth = config.getint("ADC", "precision")
-
-        self.convert_latency = 1 / self.sample_rate * (self.precision + 2)
+        self.sample_rate = config.getfloat("ADC", "sample_rate")
+        self.precision = config.getint("ADC", "precision")
+        if config.has_option("ADC", "latency"):
+            self.convert_latency = config.getint("ADC", "latency")
+        else:
+            self.convert_latency = 1 / self.sample_rate * (self.precision + 2)
+        self.convert_energy = self.convert_latency * self.power
         self.convert_energy = self.convert_latency * self.power
     def convert(self):
         return self.convert_latency, self.convert_energy

@@ -22,11 +22,11 @@ class Crossbar():
         if self.type == "RRAM" and self.RRAM_cell_type == "1T1R":
             # for example, 64*64 2bit 1T1R RRAM, represent 64*8 8bit number
             self.d_weight_rows = self.n_rows
-            self.d_weight_cols = int(self.n_cols / (self.bit_per_weight / self.bit_per_cell * 2))
+            self.d_weight_cols = int(self.n_cols / (self.bit_per_weight / self.bit_per_cell))
         elif self.type == "RRAM" and self.RRAM_cell_type == "2T2R":
             # for example, 64*64 2bit 2T2R RRAM, represent 32*16 8bit number
             self.d_weight_rows = int(self.n_rows / 2)
-            self.d_weight_size = int(self.n_cols / (self.bit_per_weight / self.bit_per_cell))
+            self.d_weight_size = int(self.n_cols / (self.bit_per_weight / self.bit_per_cell / 2))
     def compute(self, active_rows, active_cols):
         compute_latency = self.mem_read_latency
         compute_energy = self.mem_read_energy * active_rows * active_cols
