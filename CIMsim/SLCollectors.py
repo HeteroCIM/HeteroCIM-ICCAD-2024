@@ -8,7 +8,7 @@ class ADC():
         self.sample_rate = config.getfloat("ADC", "sample_rate")
         self.precision = config.getint("ADC", "precision")
         if config.has_option("ADC", "latency"):
-            self.convert_latency = config.getint("ADC", "latency")
+            self.convert_latency = config.getfloat("ADC", "latency")
         else:
             self.convert_latency = 1 / self.sample_rate * (self.precision + 2)
         self.convert_energy = self.convert_latency * self.power

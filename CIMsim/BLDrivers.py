@@ -8,7 +8,7 @@ class DAC():
         self.sample_rate = config.getfloat("DAC", "sample_rate")
         self.precision = config.getint("DAC", "precision")
         if config.has_option("DAC", "latency"):
-            self.convert_latency = config.getint("DAC", "latency")
+            self.convert_latency = config.getfloat("DAC", "latency")
         else:
             self.convert_latency = 1 / self.sample_rate * (self.precision + 2)
         self.convert_energy = self.convert_latency * self.power
