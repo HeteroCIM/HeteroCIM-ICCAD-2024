@@ -4,66 +4,73 @@ from CIMsim.Event import *
 from CIMsim.Tile import *
 from CIMsim.Buffer import *
 def executeEvent(event):
+    global_stats = {}
     if event.event_type == EventType.LoadEvent:
         assert isinstance(event.src, DRAM), "src of load event must be DRAM"
         if isinstance(event.dst, Buffer):
-            src_read_T, src_read_E = event.src.read(event.data_size)
-            dst_write_T, dst_write_E = event.dst.write(event.data_size)
+            src_read_T, src_read_E = event.src.read(data_size = event.data_size, stats = global_stats)
+            dst_write_T, dst_write_E = event.dst.write(data_size = event.data_size, stats = global_stats)
             event_T = max(src_read_T, dst_write_T)
             event_E = src_read_E + dst_write_E
-            return event_T, event_E
+            return event_T, event_E, global_stats
         elif isinstance(event.dst, Tile):
-            src_read_T, src_read_E = event.src.read(event.data_size)
-            dst_write_T, dst_write_E = event.dst.input_buf.write(event.data_size)
+            src_read_T, src_read_E = event.src.read(data_size = event.data_size, stats = global_stats)
+            dst_write_T, dst_write_E = event.dst.input_buf.write(data_size = event.data_size, stats = global_stats)
             event_T = max(src_read_T, dst_write_T)
             event_E = src_read_E + dst_write_E
-            return event_T, event_E
+            return event_T, event_E, global_stats
         else: assert 0
     elif event.event_type == EventType.StoreEvent:
         assert isinstance(event.dst, DRAM), "dst of store event must be DRAM"
-        src_read_T, src_read_E = event.src.read(event.data_size)
-        dst_write_T, dst_write_E = event.dst.write(event.data_size)
+        src_read_T, src_read_E = event.src.read(event.data_size, stats = global_stats)
+        dst_write_T, dst_write_E = event.dst.write(event.data_size, stats = global_stats)
         event_T = max(src_read_T, dst_write_T)
         event_E = src_read_E + dst_write_E
-        return event_T, event_E
+        return event_T, event_E, global_stats
+    elif event.event_type == EventType.WriteEvent:
+        assert isinstance(event.tile, Tile), "write event must be executed in a tile"
+        event_T, event_E = event.tile.write(event.data_size, stats = global_stats)
+        return event_T, event_E, global_stats
+
     elif event.event_type == EventType.MoveEvent:
         if isinstance(event.src, Buffer) and isinstance(event.dst, Buffer):
             # data transmission between buffer and buffer
             assert 0, "why it happens?"
         elif isinstance(event.src, Buffer) and isinstance(event.dst, Tile):
             # data transmission from global buffer to tile
-            src_read_T, src_read_E = event.src.read(event.data_size)
-            dst_write_T, dst_write_E = event.dst.input_buf.write(event.data_size)
+            src_read_T, src_read_E = event.src.read(event.data_size, stats = global_stats)
+            dst_write_T, dst_write_E = event.dst.input_buf.write(event.data_size, stats = global_stats)
             event_T = max(src_read_T, dst_write_T)
             event_E = src_read_E + dst_write_E
-            return event_T, event_E
+            return event_T, event_E, global_stats
         elif isinstance(event.src, Tile) and isinstance(event.dst, Tile):
             # data transmission between tile and tile
-            src_read_T, src_read_E = event.src.output_buf.read(event.data_size)
-            dst_write_T, dst_write_E = event.dst.input_buf.write(event.data_size)
+            src_read_T, src_read_E = event.src.output_buf.read(event.data_size, stats = global_stats)
+            dst_write_T, dst_write_E = event.dst.input_buf.write(event.data_size, stats = global_stats)
             # # need to check
             # bus_T = event.data_size / event.dst.inter_tile_bandwidth
             event_T = max(src_read_T, dst_write_T)#, bus_T)
             event_E = src_read_E + dst_write_E
-            return event_T, event_E
+            return event_T, event_E, global_stats
         elif isinstance(event.src, Tile) and isinstance(event.dst, Buffer):
             # data transmission from tile to global buffer
-            src_read_T, src_read_E = event.src.output_buf.read(event.data_size)
-            dst_write_T, dst_write_E = event.dst.write(event.data_size)
+            src_read_T, src_read_E = event.src.output_buf.read(event.data_size, stats = global_stats)
+            dst_write_T, dst_write_E = event.dst.write(event.data_size, stats = global_stats)
             event_T = max(src_read_T, dst_write_T)
             event_E = src_read_E + dst_write_E
-            return event_T, event_E
-        return event_T, event_E
-    elif event.event_type == EventType.MatmulEvent:
+            return event_T, event_E, global_stats
+    elif event.event_type == EventType.VecMatMulEvent:
         assert isinstance(event.assigned_hardware, Tile), "matmul must be calculated in tile!"
         assert event.input_1_shape[1] == event.input_2_shape[0], "matrix dimensions don't match!"
         event_T = 0
         event_E = 0
         assert (event.input_2_shape[0] <= event.assigned_hardware.crossbar.n_rows) and (event.input_2_shape[1] <= event.assigned_hardware.crossbar.n_cols), "weight partition not implemented yet"
-        global_stats = {}
+        if event.input_1_shape[0] != 1:
+            print("input is not a vector. Input matrix is divided into vectors")
         for i in range(event.input_1_shape[0]):
             cal_T, cal_E = event.assigned_hardware.compute(event.input_1_shape[1], event.input_2_shape[1], global_stats) 
             event_T += cal_T * event.input_1_shape[0]
             event_E += cal_E * event.input_1_shape[0]
-        print(global_stats)
-        return event_T, event_E
+        return event_T, event_E, global_stats
+    elif event.event_type == EventType.VectorEvent:
+        pass
