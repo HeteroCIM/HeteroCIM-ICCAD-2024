@@ -35,6 +35,9 @@ class Tile():
         self.input_buf = Buffer(self.name + "_input_buf", config_path, "Input Buffer")
         self.output_buf = Buffer(self.name + "_output_buf", config_path, "Output Buffer") 
         self.inter_tile_bandwidth = config.getfloat("Tile", "inter_tile_bandwidth")
+        self.frequency = config.getfloat("Tile", "frequency")
+
+        
     def compute(self, vector_size = 64, active_col = 64, stats = {}):
         # the read latency&energy of global_buffer is calculated in the higher level, not this tile level
         # here "compute" means vector-matrix multiplication
@@ -61,10 +64,10 @@ class Tile():
             adc_E *= active_col # total number of conversion needed for one MVM
             adc_T *= (active_col / self.ADC_num) # number of cols that one ADC is responsible for
             mac_T, mac_E = self.mac.compute() # only calculate mac_T once, because the latency can be hide in the ADC latency
-            mac_E *= active_col * (self.crossbar.bit_per_weight / self.crossbar.bit_per_cell)
-            o_reg_W_T, o_reg_W_E = self.output_buf.write(active_col)
-            total_T += (i_buf_r_T + dac_T + demux_T + crossbar_T + mux_T + adc_T + mac_T + o_reg_W_T) * cal_round
-            total_E += (i_buf_r_E + dac_E + demux_E + crossbar_E + mux_E + adc_E + mac_E + o_reg_W_E) * cal_round
+            mac_E *= active_col * (self.crossbar.weight_bits / self.crossbar.mem_bits)
+            o_buf_W_T, o_buf_W_E = self.output_buf.write(active_col)
+            total_T += (i_buf_r_T + dac_T + demux_T + crossbar_T + mux_T + adc_T + mac_T + o_buf_W_T) * cal_round
+            total_E += (i_buf_r_E + dac_E + demux_E + crossbar_E + mux_E + adc_E + mac_E + o_buf_W_E) * cal_round
             # adder needed! not implemented yet really need? or pipelined?
             local_stats = {}
             local_stats[self.name + "_i_buf_r_T"] = i_buf_r_T
@@ -81,11 +84,20 @@ class Tile():
             local_stats[self.name + "_adc_E"] = adc_E
             local_stats[self.name + "_mac_T"] = mac_T
             local_stats[self.name + "_mac_E"] = mac_E
-            local_stats[self.name + "_o_reg_W_T"] = o_reg_W_T
-            local_stats[self.name + "_o_reg_W_E"] = o_reg_W_E
+            local_stats[self.name + "_o_buf_W_T"] = o_buf_W_T
+            local_stats[self.name + "_o_buf_W_E"] = o_buf_W_E
             merge_stats_add(stats, local_stats)
             return total_T, total_E
-        #o_reg_W_T, o_reg_W_E = self.output_buf.write(vector_size * 8)
+        #o_buf_W_T, o_buf_W_E = self.output_buf.write(vector_size * 8)
     def update(self):
         assert 0 , "write to mem not implemented"
     
+    def getArea(self, stats = {}):
+        if self.driver_pair == 1:
+            assert(0), "buf area needed!"
+            mux_area = self.mux.getArea()
+            demux_area = self.demux.getArea()
+            dac_area = self.dac.getArea()
+            adc_area = self.adc.getArea()
+            crossbar_area = self.crossbar.getArea()
+            #total_E += (i_buf_r_E + dac_E + demux_E + crossbar_E + mux_E + adc_E + mac_E + o_buf_W_E) * cal_round
