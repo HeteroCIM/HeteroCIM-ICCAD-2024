@@ -49,7 +49,7 @@ def executeEvent(event):
             dst_write_T, dst_write_E = event.dst.input_buf.write(event.data_size, stats = global_stats)
             # # need to check
             # bus_T = event.data_size / event.dst.inter_tile_bandwidth
-            event_T = max(src_read_T, dst_write_T)#, bus_T)
+            event_T = max(src_read_T, dst_write_T) #, bus_T)
             event_E = src_read_E + dst_write_E
             return event_T, event_E, global_stats
         elif isinstance(event.src, Tile) and isinstance(event.dst, Buffer):
@@ -60,17 +60,20 @@ def executeEvent(event):
             event_E = src_read_E + dst_write_E
             return event_T, event_E, global_stats
     elif event.event_type == EventType.VecMatMulEvent:
-        assert isinstance(event.assigned_hardware, Tile), "matmul must be calculated in tile!"
+        assert isinstance(event.hardware, Tile), "matmul must be calculated in tile!"
         assert event.input_1_shape[1] == event.input_2_shape[0], "matrix dimensions don't match!"
         event_T = 0
         event_E = 0
-        assert (event.input_2_shape[0] <= event.assigned_hardware.crossbar.n_rows) and (event.input_2_shape[1] <= event.assigned_hardware.crossbar.n_cols), "weight partition not implemented yet"
+        assert (event.input_2_shape[0] <= event.hardware.crossbar.n_rows) and (event.input_2_shape[1] <= event.hardware.crossbar.n_cols), "weight partition not implemented yet"
         if event.input_1_shape[0] != 1:
             print("input is not a vector. Input matrix is divided into vectors")
         for i in range(event.input_1_shape[0]):
-            cal_T, cal_E = event.assigned_hardware.compute(event.input_1_shape[1], event.input_2_shape[1], global_stats) 
+            cal_T, cal_E = event.hardware.compute(event.input_1_shape[1], event.input_2_shape[1], global_stats) 
             event_T += cal_T * event.input_1_shape[0]
             event_E += cal_E * event.input_1_shape[0]
+        return event_T, event_E, global_stats
+    elif event.event_type == EventType.ActivationEvent:
+        event_T, event_E = event.hardware.compute("activation", event.activation_name, input_shape = event.input_shape, stats = global_stats) 
         return event_T, event_E, global_stats
     elif event.event_type == EventType.VectorEvent:
         pass

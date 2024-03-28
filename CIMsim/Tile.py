@@ -64,6 +64,7 @@ class Tile():
             adc_E *= active_col # total number of conversion needed for one MVM
             adc_T *= (active_col / self.ADC_num) # number of cols that one ADC is responsible for
             mac_T, mac_E = self.mac.compute() # only calculate mac_T once, because the latency can be hide in the ADC latency
+            #print("debug: mac_E:",mac_E,"times:",active_col * (self.crossbar.weight_bits / self.crossbar.mem_bits),"debug: mac_T:",mac_T)
             mac_E *= active_col * (self.crossbar.weight_bits / self.crossbar.mem_bits)
             o_buf_W_T, o_buf_W_E = self.output_buf.write(active_col)
             total_T += (i_buf_r_T + dac_T + demux_T + crossbar_T + mux_T + adc_T + mac_T + o_buf_W_T) * cal_round

@@ -18,7 +18,7 @@ class MUX():
         else:
             self.energy = self.mux_2_1_power * (2 ** np.ceil(math.log(2, self.ways)) - 1) * self.latency
         # MUX area is small enough to be ignored
-        self.area = config.getfloat("MUX", "MUX_rea") if config.getfloat("MUX", "MUX_rea") != -1 else 0
+        self.area = config.getfloat("MUX", "MUX_area") if config.getfloat("MUX", "MUX_area") != -1 else 0
     def execute(self):
         return self.latency, self.energy
     def getArea(self):
@@ -42,7 +42,7 @@ class DeMUX():
         else:
             self.energy = self.demux_2_1_power * (2 ** np.ceil(math.log(2, self.ways)) - 1) * self.latency
         # DeMUX area is small enough to be ignored
-        self.area = config.getfloat("MUX", "MUX_rea") if config.getfloat("MUX", "MUX_rea") != -1 else 0
+        self.area = config.getfloat("DeMUX", "DeMUX_area") if config.getfloat("DeMUX", "DeMUX_area") != -1 else 0
             
     def execute(self):
         return self.latency, self.energy

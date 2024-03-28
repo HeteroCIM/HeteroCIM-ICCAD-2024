@@ -28,8 +28,8 @@ class Crossbar():
             self.d_weight_rows = int(self.n_rows)
             self.d_weight_size = int(self.n_cols / (self.weight_bits / self.mem_bits / 2))
         
-        self.mem_area = config.getfloat("crossbar", "mem_area")
-        self.transistor_area = config.getfloat("crossbar", "transistor_area")
+        self.mem_area = config.getfloat("crossbar", "mem_area") if config.getfloat("crossbar", "mem_area") != -1 else 0.0121
+        self.transistor_area = config.getfloat("crossbar", "transistor_area") if config.getfloat("crossbar", "transistor_area") != -1 else 0.0046
     def compute(self, active_rows, active_cols):
         compute_latency = self.mem_read_latency
         compute_energy = self.mem_read_energy * active_rows * active_cols
