@@ -27,9 +27,10 @@ class Crossbar():
             # for example, 64*64 2bit 2T2R RRAM, represent 32*16 8bit number
             self.d_weight_rows = int(self.n_rows)
             self.d_weight_size = int(self.n_cols / (self.weight_bits / self.mem_bits / 2))
+        elif self.type == "RRAM":
+            assert(0)
         
-        self.mem_area = config.getfloat("crossbar", "mem_area") if config.getfloat("crossbar", "mem_area") != -1 else 0.0121
-        self.transistor_area = config.getfloat("crossbar", "transistor_area") if config.getfloat("crossbar", "transistor_area") != -1 else 0.0046
+        self.cell_area = config.getfloat("crossbar", "cell_area")
     def compute(self, active_rows, active_cols):
         compute_latency = self.SA_latency
         compute_energy = self.SA_energy * active_cols
@@ -40,12 +41,16 @@ class Crossbar():
         update_energy = self.mem_write_energy * active_rows * active_cols
         return update_latency, update_energy
     def getArea(self):
-        cell_area = 0
-        if self.type == "RRAM" and self.RRAM_cell_type == "1T1R":
-            cell_area = self.mem_area + self.transistor_area
-        elif self.type == "RRAM" and self.RRAM_cell_type == "2T2R":
-            cell_area = (self.mem_area + self.transistor_area) * 2
-        else: 
-            assert(0)
-        area = cell_area * self.n_rows * self.n_cols
+        if self.cell_area == -1:
+            self.transistor_area = 0.0046 # TODO: different technology nodes
+            self.rram_area =  0.0121
+            if self.type == "RRAM" and self.RRAM_cell_type == "1T1R":
+                self.cell_area = self.rram_area + self.transistor_area
+            elif self.type == "RRAM" and self.RRAM_cell_type == "2T2R":
+                self.cell_area = (self.rram_area + self.transistor_area) * 2
+            else: 
+                print(self.type, self.RRAM_cell_type)
+                assert(0)
+        print("cell_area", self.cell_area, "self.n_rows", self.n_rows, "self.n_cols", self.n_cols)
+        area = self.cell_area * self.n_rows * self.n_cols
         return area

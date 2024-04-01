@@ -34,13 +34,17 @@ class ADC():
         if (self.power == -1):
             match self.precision:
                 case 1:
-                    assert(0), "No default configs for selected ADC bits. Please enter ADC power in config file"
+                    # assert(0), "No default configs for selected ADC bits. Please enter ADC power in config file"
+                    self.power = 0.004 * 2 ** self.precision
                 case 2:
-                    assert(0), "No default configs for selected ADC bits. Please enter ADC power in config file"
+                    # assert(0), "No default configs for selected ADC bits. Please enter ADC power in config file"
+                    self.power = 0.004 * 2 ** self.precision
                 case 3:
-                    assert(0), "No default configs for selected ADC bits. Please enter ADC power in config file"
+                    # assert(0), "No default configs for selected ADC bits. Please enter ADC power in config file"
+                    self.power = 0.004 * 2 ** self.precision
                 case 4:
-                    assert(0), "No default configs for selected ADC bits. Please enter ADC power in config file"
+                    # assert(0), "No default configs for selected ADC bits. Please enter ADC power in config file"
+                    self.power = 0.004 * 2 ** self.precision
                 case 5: 
                     self.power = 0.081 # A_12-GS_s_81-mW_5-bit_Time-Interleaved_Flash_ADC_With_Background_Timing_Skew_Calibration
                 case 6:
@@ -75,8 +79,9 @@ class ADC():
             self.convert_latency = 1 / sample_rate * (self.precision + 2)
         self.convert_energy = self.convert_latency * self.power
         # default config comes from "ISAAC: A Convolutional Neural Network Accelerator with In-Situ Analog Arithmetic in Crossbars"
-        self.power = config.getfloat("DAC", "power") if config.getfloat("DAC", "power") != -1 else 0.004 * 2 ** self.precision
-        self.area = config.getfloat("DAC", "area") if config.getfloat("DAC", "area") != -1 else 1.7 * 2 ** self.precision
         self.convert_energy = self.convert_latency * self.power
     def convert(self):
         return self.convert_latency, self.convert_energy
+    def getArea(self):
+        print(self.area)
+        return self.area

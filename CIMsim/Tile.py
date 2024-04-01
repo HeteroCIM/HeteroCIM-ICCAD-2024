@@ -130,10 +130,23 @@ class Tile():
     
     def getArea(self, stats = {}):
         if self.driver_pair == 1:
-            assert(0), "buf area needed!"
-            mux_area = self.mux.getArea()
-            demux_area = self.demux.getArea()
-            dac_area = self.dac.getArea()
-            adc_area = self.adc.getArea()
+            i_buf_area = self.input_buf.getArea()
+            o_buf_area = self.output_buf.getArea()
+            mux_area = self.mux.getArea() * self.ADC_num
+            demux_area = self.demux.getArea() * self.DAC_num
+            dac_area = self.dac.getArea() * self.DAC_num
+            adc_area = self.adc.getArea() * self.ADC_num
+            mac_area = self.mac.getArea() * self.ADC_num
             crossbar_area = self.crossbar.getArea()
-            #total_E += (i_buf_r_E + dac_E + demux_E + crossbar_E + mux_E + adc_E + mac_E + o_buf_W_E) * cal_round
+            total_area = i_buf_area + o_buf_area + mux_area + demux_area + dac_area + adc_area + mac_area + crossbar_area
+            local_stats = {}
+            local_stats[self.name + "_i_buf_area"] = i_buf_area
+            local_stats[self.name + "_o_buf_area"] = o_buf_area
+            local_stats[self.name + "_mux_area"] = mux_area
+            local_stats[self.name + "_demux_area"] = demux_area
+            local_stats[self.name + "_dac_area"] = dac_area
+            local_stats[self.name + "_adc_area"] = adc_area
+            local_stats[self.name + "_mac_area"] = mac_area
+            local_stats[self.name + "_crossbar_area"] = crossbar_area
+            merge_stats_add(stats, local_stats)
+            return total_area

@@ -86,6 +86,14 @@ class NonlinearVecModule():
             pass
         elif nvm_type == "reduce":
             pass
+    def getArea(self, stats):
+        local_stats = {}
+        total_area = 0
+        for name, hardware in self.activaton_module_dict:
+            total_area += hardware.getArea()
+            local_stats["NVM_" + name + "_area"] = hardware.getArea()
+        merge_stats_add(stats, local_stats)
+        return total_area
 
 
 

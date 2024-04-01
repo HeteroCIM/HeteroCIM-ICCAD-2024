@@ -49,3 +49,6 @@ class Buffer():
             local_stats[self.name + "_buf_w_E"] = energy
             merge_stats_add(stats, local_stats)
             return latency, energy
+    def getArea(self):
+        area = self.area_dict[self.size]
+        return area
