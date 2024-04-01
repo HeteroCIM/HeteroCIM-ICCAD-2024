@@ -51,6 +51,6 @@ class Crossbar():
             else: 
                 print(self.type, self.RRAM_cell_type)
                 assert(0)
-        print("cell_area", self.cell_area, "self.n_rows", self.n_rows, "self.n_cols", self.n_cols)
+        # print("cell_area", self.cell_area, "self.n_rows", self.n_rows, "self.n_cols", self.n_cols)
         area = self.cell_area * self.n_rows * self.n_cols
         return area

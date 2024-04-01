@@ -8,7 +8,7 @@ class DRAM():
         # self.bandwidth = config.getfloat("DRAM", "bandwidth")
         self.size = config.getfloat("DRAM", "size")
         self.energy_per_bit = config.getfloat("DRAM", "energy_per_bit")
-        self.bit_width = config.getint("DRAM", "bit_width")
+        self.bit_width = config.getint("DRAM", "bit_width") if config.getint("DRAM", "bit_width") != -1 else 512
         self.read_access_latency = config.getfloat("DRAM", "read_access_latency")
         self.write_access_latency = config.getfloat("DRAM", "write_access_latency")
         self.dram_frequency = config.getfloat("DRAM", "dram_frequency")

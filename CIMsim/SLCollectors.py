@@ -18,7 +18,8 @@ class ADC():
                 case 1:
                     assert(0), "No default configs for selected ADC bits. Please enter ADC sample rate in config file"
                 case 2:
-                    assert(0), "No default configs for selected ADC bits. Please enter ADC sample rate in config file"
+                    # assert(0), "No default configs for selected ADC bits. Please enter ADC sample rate in config file"
+                    sample_rate = 1e9
                 case 3:
                     assert(0), "No default configs for selected ADC bits. Please enter ADC sample rate in config file"
                 case 4:
@@ -83,5 +84,5 @@ class ADC():
     def convert(self):
         return self.convert_latency, self.convert_energy
     def getArea(self):
-        print(self.area)
+        # print(self.area)
         return self.area
