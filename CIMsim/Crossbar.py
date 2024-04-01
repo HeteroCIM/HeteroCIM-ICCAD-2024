@@ -13,9 +13,9 @@ class Crossbar():
         self.n_cols = config.getint("crossbar", "n_cols")
         self.mem_bits = config.getint("crossbar", "mem_bits")
         self.weight_bits = config.getint("crossbar", "weight_bits")
-        self.mem_read_latency = config.getfloat("crossbar", "mem_read_latency")
+        self.SA_latency = config.getfloat("crossbar", "SA_latency")
         self.mem_write_latency = config.getfloat("crossbar", "mem_write_latency")
-        self.mem_read_energy = config.getfloat("crossbar", "mem_read_energy")
+        self.SA_energy = config.getfloat("crossbar", "SA_energy")
         self.mem_write_energy = config.getfloat("crossbar", "mem_write_energy")
         self.d_weight_rows = self.n_rows # digital weight size
         self.d_weight_cols = self.n_cols # digital weight size
@@ -31,8 +31,8 @@ class Crossbar():
         self.mem_area = config.getfloat("crossbar", "mem_area") if config.getfloat("crossbar", "mem_area") != -1 else 0.0121
         self.transistor_area = config.getfloat("crossbar", "transistor_area") if config.getfloat("crossbar", "transistor_area") != -1 else 0.0046
     def compute(self, active_rows, active_cols):
-        compute_latency = self.mem_read_latency
-        compute_energy = self.mem_read_energy * active_rows * active_cols
+        compute_latency = self.SA_latency
+        compute_energy = self.SA_energy * active_cols
         return compute_latency, compute_energy
     def write(self, active_rows, active_cols):
         # need mux, DAC, xxx latency & energy

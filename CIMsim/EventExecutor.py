@@ -29,7 +29,7 @@ def executeEvent(event):
         return event_T, event_E, global_stats
     elif event.event_type == EventType.WriteEvent:
         assert isinstance(event.tile, Tile), "write event must be executed in a tile"
-        event_T, event_E = event.tile.write(event.data_size, stats = global_stats)
+        event_T, event_E = event.tile.update(event.n_rows, event.n_cols, stats = global_stats)
         return event_T, event_E, global_stats
 
     elif event.event_type == EventType.MoveEvent:

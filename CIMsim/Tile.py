@@ -8,6 +8,7 @@ from CIMsim.Register import *
 from CIMsim.MUX import *
 from CIMsim.Buffer import *
 from CIMsim.utils import *
+import numpy as np
 
 # a crossbar array tile
 class Tile():
@@ -38,24 +39,26 @@ class Tile():
         self.frequency = config.getfloat("Tile", "frequency")
 
         
-    def compute(self, vector_size = 64, active_col = 64, stats = {}):
+    def compute(self, vector_size, active_col = -1, stats = {}):
         # the read latency&energy of global_buffer is calculated in the higher level, not this tile level
         # here "compute" means vector-matrix multiplication
         # write vector into reg file
-        i_reg_W_T, i_reg_W_E = self.input_buf.write(vector_size * 8) # T: latency E: energy
         total_T = 0
         total_E = 0
-        total_T += i_reg_W_T
-        total_E += i_reg_W_E
-        # driver pair: ADC/DAC
+        # i_buf_W_T, i_buf_W_E = self.input_buf.write(vector_size * 8) # T: latency E: energy
+        # total_T += i_buf_W_T
+        # total_E += i_buf_W_E
+        # driver pair: 1: ADC/DAC
         if self.driver_pair == 1:
             # ######## if not latched, we need several rounds to input the vector and compute the whole MVM (TBD!)
             assert vector_size >= self.DAC_num
-            cal_round = vector_size / self.DAC_num
+            cal_round = np.ceil(vector_size / self.DAC_num)
             i_buf_r_T, i_buf_r_E = self.input_buf.read(self.DAC_num)
             dac_T, dac_E = self.dac.convert()
-            dac_E *= self.DAC_num
+            dac_E = dac_E * self.DAC_num
             demux_T, demux_E = self.demux.execute()
+            if active_col == -1:
+                active_col = self.crossbar.n_cols
             crossbar_T, crossbar_E = self.crossbar.compute(self.DAC_num, active_col)
             mux_T, mux_E = self.mux.execute()
             mux_E *= active_col
@@ -67,31 +70,63 @@ class Tile():
             #print("debug: mac_E:",mac_E,"times:",active_col * (self.crossbar.weight_bits / self.crossbar.mem_bits),"debug: mac_T:",mac_T)
             mac_E *= active_col * (self.crossbar.weight_bits / self.crossbar.mem_bits)
             o_buf_W_T, o_buf_W_E = self.output_buf.write(active_col)
-            total_T += (i_buf_r_T + dac_T + demux_T + crossbar_T + mux_T + adc_T + mac_T + o_buf_W_T) * cal_round
-            total_E += (i_buf_r_E + dac_E + demux_E + crossbar_E + mux_E + adc_E + mac_E + o_buf_W_E) * cal_round
+            total_T = total_T + (i_buf_r_T + dac_T + demux_T + crossbar_T + mux_T + adc_T + mac_T + o_buf_W_T) * cal_round
+            total_E = total_E + (i_buf_r_E + dac_E + demux_E + crossbar_E + mux_E + adc_E + mac_E + o_buf_W_E) * cal_round
             # adder needed! not implemented yet really need? or pipelined?
             local_stats = {}
-            local_stats[self.name + "_i_buf_r_T"] = i_buf_r_T
-            local_stats[self.name + "_i_buf_r_E"] = i_buf_r_E
-            local_stats[self.name + "_dac_T"] = dac_T
-            local_stats[self.name + "_dac_E"] = dac_E
-            local_stats[self.name + "_demux_T"] = demux_T
-            local_stats[self.name + "_demux_E"] = demux_E
-            local_stats[self.name + "_crossbar_T"] = crossbar_T
-            local_stats[self.name + "_crossbar_E"] = crossbar_E
-            local_stats[self.name + "_mux_T"] = mux_T
-            local_stats[self.name + "_mux_E"] = mux_E
-            local_stats[self.name + "_adc_T"] = adc_T
-            local_stats[self.name + "_adc_E"] = adc_E
-            local_stats[self.name + "_mac_T"] = mac_T
-            local_stats[self.name + "_mac_E"] = mac_E
-            local_stats[self.name + "_o_buf_W_T"] = o_buf_W_T
-            local_stats[self.name + "_o_buf_W_E"] = o_buf_W_E
+            local_stats[self.name + "_i_buf_r_T"] = i_buf_r_T * cal_round
+            local_stats[self.name + "_i_buf_r_E"] = i_buf_r_E * cal_round
+            local_stats[self.name + "_dac_T"] = dac_T * cal_round
+            local_stats[self.name + "_dac_E"] = dac_E * cal_round
+            local_stats[self.name + "_demux_T"] = demux_T * cal_round
+            local_stats[self.name + "_demux_E"] = demux_E * cal_round
+            local_stats[self.name + "_crossbar_T"] = crossbar_T * cal_round
+            local_stats[self.name + "_crossbar_E"] = crossbar_E * cal_round
+            local_stats[self.name + "_mux_T"] = mux_T * cal_round
+            local_stats[self.name + "_mux_E"] = mux_E * cal_round
+            local_stats[self.name + "_adc_T"] = adc_T * cal_round
+            local_stats[self.name + "_adc_E"] = adc_E * cal_round
+            local_stats[self.name + "_mac_T"] = mac_T * cal_round
+            local_stats[self.name + "_mac_E"] = mac_E * cal_round
+            local_stats[self.name + "_o_buf_W_T"] = o_buf_W_T * cal_round
+            local_stats[self.name + "_o_buf_W_E"] = o_buf_W_E * cal_round
             merge_stats_add(stats, local_stats)
             return total_T, total_E
         #o_buf_W_T, o_buf_W_E = self.output_buf.write(vector_size * 8)
-    def update(self):
-        assert 0 , "write to mem not implemented"
+    def update(self, wr_rows, wr_cols, stats = {}):
+        # driver pair: 1: ADC/DAC
+        total_T = 0
+        total_E = 0
+        # i_buf_w_T, i_buf_w_E = self.input_buf.write(wr_rows * wr_cols * 8) # T: latency E: energy
+        # total_T += i_buf_w_T
+        # total_E += i_buf_w_E
+        if self.driver_pair == 1:
+            write_round = np.ceil(wr_rows / self.DAC_num)
+            i_buf_r_T, i_buf_r_E = self.input_buf.read(self.DAC_num)
+            dac_T, dac_E = self.dac.convert()
+            dac_E *= self.DAC_num
+            demux_T, demux_E = self.demux.execute()
+            crossbar_T, crossbar_E = self.crossbar.write(self.DAC_num, wr_cols)
+            # print("####################################  i_buf_r_T", i_buf_r_T, "dac_T", dac_T, "demux_T", demux_T, "crossbar_T", crossbar_T, "write_round", write_round)
+            total_T = total_T + (i_buf_r_T + dac_T + demux_T + crossbar_T) * write_round
+            total_E = total_E + (i_buf_r_E + dac_E + demux_E + crossbar_E) * write_round
+            # print("####################################  total_T", total_T, "total_E", total_E)
+            local_stats = {}
+            # local_stats[self.name + "_i_buf_w_T"] = i_buf_w_T * write_round
+            # local_stats[self.name + "_i_buf_w_E"] = i_buf_w_E * write_round
+            local_stats[self.name + "_i_buf_r_T"] = i_buf_r_T * write_round
+            local_stats[self.name + "_i_buf_r_E"] = i_buf_r_E * write_round
+            local_stats[self.name + "_dac_T"] = dac_T * write_round
+            local_stats[self.name + "_dac_E"] = dac_E * write_round
+            local_stats[self.name + "_demux_T"] = demux_T * write_round
+            local_stats[self.name + "_demux_E"] = demux_E * write_round
+            local_stats[self.name + "_crossbar_T"] = crossbar_T * write_round
+            local_stats[self.name + "_crossbar_E"] = crossbar_E * write_round
+            merge_stats_add(stats, local_stats)
+            # print("############")
+            # print(stats)
+            # print("############")
+        return total_T, total_E
     
     def getArea(self, stats = {}):
         if self.driver_pair == 1:

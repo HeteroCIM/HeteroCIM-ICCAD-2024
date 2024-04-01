@@ -2,7 +2,6 @@ import configparser as cp
 from CIMsim.utils import *
 class DRAM():
     def __init__(self, name, config_path = ""):
-        # default: bandwidth 19.2GB/s (DDR4) 
         assert config_path != "", "cannot find config file!"
         config = cp.ConfigParser()
         config.read(config_path)

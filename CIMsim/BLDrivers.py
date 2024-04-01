@@ -5,7 +5,7 @@ class DAC():
         config.read(config_path)
         assert config_path != "", "cannot find config file!"
         self.precision = config.getint("DAC", "precision")
-        self.sample_rate = config.getfloat("DAC", "sample_rate")
+        self.sample_rate = config.getfloat("DAC", "sample_rate") if config.getfloat("DAC", "sample_rate") != -1 else 1e9
         if config.getfloat("DAC", "latency") != -1:
             self.convert_latency = config.getfloat("DAC", "latency")
         else:
