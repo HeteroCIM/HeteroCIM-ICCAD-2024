@@ -86,3 +86,16 @@ class ADC():
     def getArea(self):
         # print(self.area)
         return self.area
+
+# collect output results with capacitor and ramp circuit
+class CapRamp():
+    def __init__(self, config_path = ""):
+        assert config_path != "", "cannot find config file!"
+        config = cp.ConfigParser()
+        config.read(config_path)
+        self.precision = config.getint("CapRamp", "precision")
+        self.tick = config.getfloat("CapRamp", "tick")
+        self.latency = 2 ** self.precision * self.tick
+        self.energy = -1 # TODO modify
+    def convert(self):
+        return self.latency, self.energy

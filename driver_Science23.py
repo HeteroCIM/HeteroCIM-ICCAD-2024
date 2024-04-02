@@ -11,20 +11,24 @@ from CIMsim.NonlinearVecModule import *
 
 # dram = DRAM("config.ini")
 # print(dram.size)def 
-dram = DRAM(name="dram", config_path="Science23_system.ini")
-global_buffer = Buffer(name = "g_buf", config_path = "Science23_chip.ini", key = "Global Buffer")
-tile1 = Tile(name = "tile1", config_path = "Science23_tile_1.ini")
-tile2 = Tile(name = "tile2", config_path = "Science23_tile_2.ini")
-nonlinear_vec_module = NonlinearVecModule(name = "nvm", config_path = "Science23_nvm.ini")
+dram = DRAM(name="dram", config_path="config_files/Science23_system.ini")
+global_buffer = Buffer(name = "g_buf", config_path = "config_files/Science23_chip.ini", key = "Global Buffer")
+cpu_cache = Buffer(name = "cpu_cache", config_path = "config_files/Science23_chip.ini", key = "Global Buffer")
+tile1 = Tile(name = "tile_1", config_path = "config_files/Science23_tile_1.ini")
+tile2 = Tile(name = "tile_2", config_path = "config_files/Science23_tile_2.ini")
+nonlinear_vec_module = NonlinearVecModule(name = "nvm", config_path = "config_files/Science23_nvm.ini")
 
 def eventDriven():
+    st0 = StoreEvent(event_name = "st1", event_id = 1, event_dependency = [], event_status = EventStatus.wait, src=cpu_cache, dst=dram, data_size=784*8)
     ld1 = LoadEvent(event_name = "ld1", event_id = 1, event_dependency = [], event_status = EventStatus.wait, src=dram, dst=tile1, data_size=784*8)
     mm1 = VecMatMulEvent(event_name = "mm1", event_id = 2, event_dependency = [ld1], event_status = EventStatus.wait, input_1_shape = [1,784], input_2_shape = [784,100], hardware = tile1)
-    mv1 = MoveEvent(event_name= "mv1", event_id=3, event_dependency = [mm1], event_status=EventStatus.wait, src=tile1, dst=tile2, data_size=100*8)
+    mv1 = MoveEvent(event_name= "mv1", event_id=3, event_dependency = [mm1], event_status=EventStatus.wait, src=tile1, dst=nonlinear_vec_module, data_size=100*8)
+    nvm1 = ActivationEvent(event_name= "nvm1", event_id=3, event_dependency = [mm1], event_status=EventStatus.wait, input_shape = [1,100], activation_name = "ReLU", hardware = nonlinear_vec_module)
+    mv2 = MoveEvent(event_name= "mv2", event_id=3, event_dependency = [], event_status=EventStatus.wait, src=nonlinear_vec_module, dst=tile2, data_size=100*8)
     mm2 = VecMatMulEvent(event_name = "mm2", event_id = 3, event_dependency = [mv1], event_status = EventStatus.wait, input_1_shape = [1,100], input_2_shape = [100,10], hardware = tile2)
-    # st1 = StoreEvent(event_name = "st1", event_id = 1, event_dependency = [], event_status = EventStatus.wait, src=tile2, dst=dram, data_size=10*8)
-    # event_list = [ld1, mm1, mv1, mm2] 
-    event_list = [ld1, mm1, mv1, mm2]
+    st1 = StoreEvent(event_name = "st1", event_id = 1, event_dependency = [], event_status = EventStatus.wait, src=tile2, dst=dram, data_size=10*8)
+    # event_list = [ld1, mm1, mv1, mm2]
+    event_list = [st0, ld1, mm1, mv1, nvm1, mv2, mm2, st1]
 
 
     ld2 = LoadEvent(event_name = "ld2", event_id = 1, event_dependency = [], event_status = EventStatus.wait, src=dram, dst=tile1, data_size=784*100*8)
@@ -41,6 +45,7 @@ def eventDriven():
     program_E = 0
     for event in event_list:
         dict_detail = {}
+        # print(event.event_name)
         T, E, stats = executeEvent(event)
         inf_T += T
         inf_E += E
@@ -66,21 +71,28 @@ def get_area():
     area_stats = {}
     tile_1_area_stats = {}
     tile_2_area_stats = {}
+    nvm_area_stats = {}
     tile_1_area = tile1.getArea(tile_1_area_stats)
     tile_2_area = tile2.getArea(tile_2_area_stats)
     global_buffer_area = global_buffer.getArea()
+    nvm_module_area = nonlinear_vec_module.getArea(stats = nvm_area_stats)
     area_stats["area_tile_1"] = tile_1_area
     area_stats["area_tile_2"] = tile_2_area
     area_stats["area_global_buffer"] = global_buffer_area
+    area_stats["area_nvm_module"] = nvm_module_area
 
     # total_area = 0
     # for value in area_stats.values():
     #     total_area += value
-    total_area = tile_1_area + tile_2_area + global_buffer_area
-    print("total_area:", total_area, "tile_1_area:", tile_1_area, "tile_2_area:", tile_2_area, "global_buffer_area", global_buffer_area)
+    total_area = tile_1_area + tile_2_area + nvm_module_area - tile_1_area_stats["tile_1_o_buf_area"]
+    print("total_area:", total_area, "tile_1_area:", tile_1_area, "tile_2_area:", tile_2_area, "global_buffer_area", global_buffer_area, "nvm_module_area", nvm_module_area)
     print("--------------detailed stats------------------")
     print("tile_1_area_stats\n",tile_1_area_stats)
     print("tile_2_area_stats\n",tile_2_area_stats)
+    print("nvm_area_stats\n",nvm_area_stats)
+    stat_dict, ratio_dict = get_detailed_stats(total_area, [tile_1_area_stats, tile_2_area_stats], ["tile_1", "tile_2"], ["i_buf_area", "o_buf_area", "dac_area", "adc_area", "mac_area", "crossbar_area"])
+    print(stat_dict)
+    print(ratio_dict)
 
 eventDriven()
-#get_area()
+# get_area()

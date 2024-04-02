@@ -3,6 +3,7 @@ from CIMsim.Crossbar import *
 from CIMsim.Event import *
 from CIMsim.Tile import *
 from CIMsim.Buffer import *
+from CIMsim.NonlinearVecModule import *
 def executeEvent(event):
     global_stats = {}
     if event.event_type == EventType.LoadEvent:
@@ -22,7 +23,11 @@ def executeEvent(event):
         else: assert 0
     elif event.event_type == EventType.StoreEvent:
         assert isinstance(event.dst, DRAM), "dst of store event must be DRAM"
-        src_read_T, src_read_E = event.src.read(event.data_size, stats = global_stats)
+        src_read_T, src_read_E = 0, 0
+        if isinstance(event.src, Buffer):
+            src_read_T, src_read_E = event.src.read(event.data_size, stats = global_stats)
+        elif isinstance(event.src, Tile):
+            src_read_T, src_read_E = event.src.output_buf.read(event.data_size, stats = global_stats)
         dst_write_T, dst_write_E = event.dst.write(event.data_size, stats = global_stats)
         event_T = max(src_read_T, dst_write_T)
         event_E = src_read_E + dst_write_E
@@ -59,6 +64,20 @@ def executeEvent(event):
             event_T = max(src_read_T, dst_write_T)
             event_E = src_read_E + dst_write_E
             return event_T, event_E, global_stats
+        elif isinstance(event.src, Tile) and isinstance(event.dst, NonlinearVecModule):
+            # data transmission between tile and tile
+            src_read_T, src_read_E = event.src.output_buf.read(event.data_size, stats = global_stats)
+            dst_write_T, dst_write_E = event.dst.nvm_buf.write(event.data_size, stats = global_stats)
+            event_T = max(src_read_T, dst_write_T)
+            event_E = src_read_E + dst_write_E
+            return event_T, event_E, global_stats
+        elif isinstance(event.src, NonlinearVecModule) and isinstance(event.dst, Tile):
+            # data transmission between tile and tile
+            src_read_T, src_read_E = event.src.nvm_buf.read(event.data_size, stats = global_stats)
+            dst_write_T, dst_write_E = event.dst.input_buf.write(event.data_size, stats = global_stats)
+            event_T = max(src_read_T, dst_write_T)
+            event_E = src_read_E + dst_write_E
+            return event_T, event_E, global_stats
     elif event.event_type == EventType.VecMatMulEvent:
         assert isinstance(event.hardware, Tile), "matmul must be calculated in tile!"
         assert event.input_1_shape[1] == event.input_2_shape[0], "matrix dimensions don't match!"
@@ -68,7 +87,7 @@ def executeEvent(event):
         if event.input_1_shape[0] != 1:
             print("input is not a vector. Input matrix is divided into vectors")
         for i in range(event.input_1_shape[0]):
-            cal_T, cal_E = event.hardware.compute(event.input_1_shape[1], event.input_2_shape[1], global_stats) 
+            cal_T, cal_E = event.hardware.compute(vector_size = event.input_1_shape[1], active_cols = event.input_2_shape[1], stats = global_stats) 
             event_T += cal_T * event.input_1_shape[0]
             event_E += cal_E * event.input_1_shape[0]
         return event_T, event_E, global_stats

@@ -1,4 +1,6 @@
 from CIMsim.NonlinearVecModule import *
-a = 2
-a += 2*3
-print(a)
+a, b = 2, 6
+print(a, b )
+c, d = 7, 4
+a, b += c, d
+print(a, b)

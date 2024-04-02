@@ -3,6 +3,7 @@ import math
 import numpy as np
 from CIMsim.utils import *
 from CIMsim.MAC import *
+from CIMsim.Buffer import *
 from typing import List, Optional
 # NVM means nonlinear vector module. NVM is responsible for nonlinear operations and SIMD vector operations
 
@@ -27,6 +28,7 @@ class LUT():
         compare_E = self.mux_2_1_power * comparisons / 2 * compare_T # average
         ram_T = self.ram_access_latency
         ram_E = self.ram_energy_per_bit * 3 * self.LUT_precision
+        self.mac_T, self.mac_E = self.mac.compute()
         n_mux = 2 ** np.ceil(math.log(2,self.n_samples)) - 1
         mux_T = self.mux_2_1_latency * np.ceil(math.log(2,self.n_samples))
         mux_E = self.mux_2_1_power * n_mux * self.mux_2_1_latency
@@ -39,8 +41,8 @@ class LUT():
         cnt = 1
         for i in input_shape:
             cnt *= i
-        total_T = self.LUT_T * cnt
-        total_E = self.LUT_E * cnt
+        total_T = (self.LUT_T) * cnt + self.mac_T # TODO
+        total_E = (self.LUT_E + self.mac_E) * cnt
         return total_T, total_E
     def getArea(self):
         return self.sram_area
@@ -61,6 +63,7 @@ class NonlinearVecModule():
             "ELU": {4:3, 8:6, 16:24, 32:281},
             "SiLU": {4:3, 8:9, 16:36, 32:485}
         }
+        self.nvm_buf = Buffer(self.name + "_input_buf", config_path, "NonlinearVectorModule Buffer")
         self.activaton_module_dict = {}
         for func in activation_func_list:
             if config.getboolean("NonlinearVecModule", "has_" + func):
@@ -75,13 +78,25 @@ class NonlinearVecModule():
                 else: 
                     assert(0), "TODO: regular computation"
     def compute(self, nvm_type: str, nvm_name: str, input_shape: List[int], stats = {}):
+        total_T = 0
+        total_E = 0
+        local_stats = {}
+        n_elements = 1
+        for i in input_shape:
+            n_elements *= i
+        nvm_buf_T, nvm_buf_E = self.nvm_buf.read(n_elements * 8)
+        total_T += nvm_buf_T
+        total_E += nvm_buf_E
+        local_stats[self.name + "_buf_T"] = nvm_buf_T
+        local_stats[self.name + "_buf_E"] = nvm_buf_E
         if nvm_type == "activation":
             act_T, act_E = self.activaton_module_dict[nvm_name].compute(input_shape)
-            local_stats = {}
+            total_T += act_T
+            total_E += act_E
             local_stats[self.name + "_" + nvm_name + "_T"] = act_T
             local_stats[self.name + "_" + nvm_name + "_E"] = act_E
             merge_stats_add(stats, local_stats)
-            return act_T, act_E
+            return total_T, total_E
         elif nvm_type == "vector":
             pass
         elif nvm_type == "reduce":
@@ -89,7 +104,10 @@ class NonlinearVecModule():
     def getArea(self, stats):
         local_stats = {}
         total_area = 0
-        for name, hardware in self.activaton_module_dict:
+        # print(self.activaton_module_dict)
+        # assert(0)
+        for name in self.activaton_module_dict.keys():
+            hardware = self.activaton_module_dict[name]
             total_area += hardware.getArea()
             local_stats["NVM_" + name + "_area"] = hardware.getArea()
         merge_stats_add(stats, local_stats)

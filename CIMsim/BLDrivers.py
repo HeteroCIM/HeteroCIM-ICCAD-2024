@@ -19,3 +19,15 @@ class DAC():
         return self.convert_latency, self.convert_energy
     def getArea(self):
         return self.area
+
+class PWM():
+    def __init__(self, config_path = ""):
+        assert config_path != "", "cannot find config file!"
+        config = cp.ConfigParser()
+        config.read(config_path)
+        self.precision = config.getint("PWM", "precision")
+        self.tick = config.getfloat("PWM", "tick")
+        self.latency = 2 ** self.precision * self.tick
+        self.energy = -1 # TODO modify
+    def convert(self):
+        return self.latency, self.energy

@@ -11,7 +11,7 @@ from CIMsim.utils import *
 import numpy as np
 
 # a crossbar array tile
-class Tile():
+class Tile(): 
     def __init__(self, name, config_path = ""):
         config = cp.ConfigParser()
         config.read(config_path)
@@ -28,18 +28,26 @@ class Tile():
             self.dac = DAC(config_path)
             self.mux = MUX(config_path)
             self.demux = DeMUX(config_path)
+            self.input_buf = Buffer(self.name + "_input_buf", config_path, "Input Buffer")
+            self.output_buf = Buffer(self.name + "_output_buf", config_path, "Output Buffer") 
+            self.inter_tile_bandwidth = config.getfloat("Tile", "inter_tile_bandwidth")
+            self.mac = MAC(config_path)
+            self.frequency = config.getfloat("Tile", "frequency")
+        elif self.driver_pair == 3:
+            self.Gen_PWM = config.getboolean("Tile", "Gen_PWM")
+            if self.Gen_PWM:
+                self.PWM = PWM(config_path)
+                self.PWE_num = config.getint("Tile", "PWE_num")
+            self.cap_ramp = CapRamp(config_path)
+            self.cap_num = config.getint("Tile", "cap_num")
         else:
             assert False, "not implemented yet"
         self.crossbar = Crossbar(config_path)
-        self.mac = MAC(config_path)
         self.name = name 
-        self.input_buf = Buffer(self.name + "_input_buf", config_path, "Input Buffer")
-        self.output_buf = Buffer(self.name + "_output_buf", config_path, "Output Buffer") 
-        self.inter_tile_bandwidth = config.getfloat("Tile", "inter_tile_bandwidth")
-        self.frequency = config.getfloat("Tile", "frequency")
+        
 
         
-    def compute(self, vector_size, active_col = -1, stats = {}):
+    def compute(self, vector_size, active_rows = -1, active_cols = -1, stats = {}):
         # the read latency&energy of global_buffer is calculated in the higher level, not this tile level
         # here "compute" means vector-matrix multiplication
         # write vector into reg file
@@ -51,47 +59,80 @@ class Tile():
         # driver pair: 1: ADC/DAC
         if self.driver_pair == 1:
             # ######## if not latched, we need several rounds to input the vector and compute the whole MVM (TBD!)
-            assert vector_size >= self.DAC_num
-            cal_round = np.ceil(vector_size / self.DAC_num)
-            i_buf_r_T, i_buf_r_E = self.input_buf.read(self.DAC_num)
+            # assert vector_size >= self.DAC_num
+            # ######## TODO: need explanation here!
+            if active_rows == -1:
+                active_rows = np.min(self.crossbar.DAC_num, vector_size)
+            if active_cols == -1:
+                active_cols = self.crossbar.n_cols
+            cal_round = np.ceil(vector_size / active_rows) * np.ceil(active_cols / self.ADC_num)
+            i_buf_r_T, i_buf_r_E = self.input_buf.read(active_rows)
             dac_T, dac_E = self.dac.convert()
-            dac_E = dac_E * self.DAC_num
+            dac_E = dac_E * active_rows
             demux_T, demux_E = self.demux.execute()
-            if active_col == -1:
-                active_col = self.crossbar.n_cols
-            crossbar_T, crossbar_E = self.crossbar.compute(self.DAC_num, active_col)
+            crossbar_T, crossbar_E = self.crossbar.compute(active_rows, active_cols)
             mux_T, mux_E = self.mux.execute()
-            mux_E *= active_col
-            mux_T *= (active_col / self.ADC_num)
+            mux_E *= active_cols
+            mux_T *= (active_cols / self.ADC_num)
             adc_T, adc_E = self.adc.convert()
-            adc_E *= active_col # total number of conversion needed for one MVM
-            adc_T *= (active_col / self.ADC_num) # number of cols that one ADC is responsible for
+            adc_E *= active_cols # total number of conversion needed for one MVM
+            adc_T *= (active_cols / self.ADC_num) # number of cols that one ADC is responsible for
+            # print(adc_T, adc_E, active_cols)
+            # assert(0)
             mac_T, mac_E = self.mac.compute() # only calculate mac_T once, because the latency can be hide in the ADC latency
-            #print("debug: mac_E:",mac_E,"times:",active_col * (self.crossbar.weight_bits / self.crossbar.mem_bits),"debug: mac_T:",mac_T)
-            mac_E *= active_col * (self.crossbar.weight_bits / self.crossbar.mem_bits)
-            o_buf_W_T, o_buf_W_E = self.output_buf.write(active_col)
+            #print("debug: mac_E:",mac_E,"times:",active_cols * (self.crossbar.weight_bits / self.crossbar.mem_bits),"debug: mac_T:",mac_T)
+            mac_E *= active_cols * (self.crossbar.weight_bits / self.crossbar.mem_bits)
+            o_buf_W_T, o_buf_W_E = self.output_buf.write(active_cols)
             total_T = total_T + (i_buf_r_T + dac_T + demux_T + crossbar_T + mux_T + adc_T + mac_T + o_buf_W_T) * cal_round
             total_E = total_E + (i_buf_r_E + dac_E + demux_E + crossbar_E + mux_E + adc_E + mac_E + o_buf_W_E) * cal_round
-            # adder needed! not implemented yet really need? or pipelined?
+            # adder needed! not implemented yet really need? or Gen_PWM?
             local_stats = {}
             local_stats[self.name + "_i_buf_r_T"] = i_buf_r_T * cal_round
-            local_stats[self.name + "_i_buf_r_E"] = i_buf_r_E * cal_round
             local_stats[self.name + "_dac_T"] = dac_T * cal_round
-            local_stats[self.name + "_dac_E"] = dac_E * cal_round
             local_stats[self.name + "_demux_T"] = demux_T * cal_round
-            local_stats[self.name + "_demux_E"] = demux_E * cal_round
             local_stats[self.name + "_crossbar_T"] = crossbar_T * cal_round
-            local_stats[self.name + "_crossbar_E"] = crossbar_E * cal_round
             local_stats[self.name + "_mux_T"] = mux_T * cal_round
-            local_stats[self.name + "_mux_E"] = mux_E * cal_round
             local_stats[self.name + "_adc_T"] = adc_T * cal_round
-            local_stats[self.name + "_adc_E"] = adc_E * cal_round
             local_stats[self.name + "_mac_T"] = mac_T * cal_round
-            local_stats[self.name + "_mac_E"] = mac_E * cal_round
             local_stats[self.name + "_o_buf_W_T"] = o_buf_W_T * cal_round
+
+            local_stats[self.name + "_i_buf_r_E"] = i_buf_r_E * cal_round
+            local_stats[self.name + "_dac_E"] = dac_E * cal_round
+            local_stats[self.name + "_demux_E"] = demux_E * cal_round
+            local_stats[self.name + "_crossbar_E"] = crossbar_E * cal_round
+            local_stats[self.name + "_mux_E"] = mux_E * cal_round
+            local_stats[self.name + "_adc_E"] = adc_E * cal_round
+            local_stats[self.name + "_mac_E"] = mac_E * cal_round
             local_stats[self.name + "_o_buf_W_E"] = o_buf_W_E * cal_round
+
             merge_stats_add(stats, local_stats)
             return total_T, total_E
+        elif self.driver_pair == 3:
+            if active_rows == -1:
+                active_rows = np.min((self.PWE_num, vector_size)) if self.Gen_PWM else vector_size
+            if active_cols == -1:
+                active_cols = self.crossbar.n_cols
+            local_stats = {}
+            total_T, total_E = 0, 0
+            cal_round = np.ceil(vector_size / active_rows) * np.ceil(active_cols / self.cap_num)
+            if self.Gen_PWM:
+                PWM_T, PWM_E = self.PWM.convert()
+                PWM_E = PWM_E * self.PWE_num * cal_round
+                PWM_T *= cal_round
+                total_T += PWM_T
+                total_E += PWM_E
+                local_stats[self.name + "_PWM_T"] = PWM_T
+                local_stats[self.name + "_PWM_E"] = PWM_E
+            cap_ramp_T, cap_ramp_E = self.cap_ramp.convert()
+            cap_ramp_T *= cal_round
+            cap_ramp_E *= active_cols * cal_round
+            total_T += cap_ramp_T
+            total_E += cap_ramp_E
+            local_stats[self.name + "_cap_ramp_T"] = cap_ramp_T
+            local_stats[self.name + "_cap_ramp_E"] = cap_ramp_E
+            return total_T, total_E
+        else:
+            assert(0), "unrecognized driver & collector pair"
         #o_buf_W_T, o_buf_W_E = self.output_buf.write(vector_size * 8)
     def update(self, wr_rows, wr_cols, stats = {}):
         # driver pair: 1: ADC/DAC
