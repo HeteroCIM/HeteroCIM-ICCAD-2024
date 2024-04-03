@@ -13,8 +13,6 @@ class Crossbar():
         self.mem_write_latency = config.getfloat("crossbar", "mem_write_latency")
         self.mem_write_energy = config.getfloat("crossbar", "mem_write_energy")
         self.cell_area = config.getfloat("crossbar", "cell_area")
-        self.d_weight_rows = self.n_rows # rows of digital weight
-        self.d_weight_cols = self.n_cols # cols of digital weight
 
         self.type = config["crossbar"]["type"]
         if self.type == "RRAM":
@@ -24,15 +22,19 @@ class Crossbar():
             if self.RRAM_cell_type == "1T1R":
                 # for example, 64*64 2bit 1T1R RRAM, represent 64*8 8bit number
                 self.d_weight_rows = self.n_rows
-                self.d_weight_cols = int(self.n_cols / (self.weight_bits / self.mem_bits))
+                self.d_weight_cols = int(self.n_cols / (self.weight_bits / self.mem_bits) / 2)
             elif self.RRAM_cell_type == "2T2R":
                 # for example, 64*64 2bit 2T2R RRAM, represent 32*16 8bit number
                 self.d_weight_rows = int(self.n_rows)
-                self.d_weight_size = int(self.n_cols / (self.weight_bits / self.mem_bits / 2))
+                self.d_weight_cols = int(self.n_cols / (self.weight_bits / self.mem_bits))
             else:
                 assert(0), "Only support 1T1R and 2T2R for RRAM configs now."
         elif self.type == "PCM":
-            pass
+            self.d_weight_rows = int(self.n_rows)
+            self.d_weight_cols = int(self.n_cols / (self.weight_bits / self.mem_bits) / 2)
+            # print("weight_bits", self.weight_bits, "mem_bits", self.mem_bits)
+            # print("d_weight_rows", self.d_weight_rows, "d_weight_cols", self.d_weight_cols)
+            # assert(0)
     def compute(self, active_rows, active_cols):
         compute_latency = self.SA_latency
         compute_energy = self.SA_energy * active_cols
@@ -55,6 +57,8 @@ class Crossbar():
                     print(self.type, self.RRAM_cell_type)
                     assert(0)
             elif self.type == "PCM":
-                self.cell_area = 0.133 # A_90nm_32-mb_phase_change_memory_with_flash_SPI_compatibility
+                self.cell_area = 0.2025 # A_90nm_32-mb_phase_change_memory_with_flash_SPI_compatibility
+                self.transistor_area = 0.0046
+                self.cell_area += self.transistor_area
         area = self.cell_area * self.n_rows * self.n_cols
         return area

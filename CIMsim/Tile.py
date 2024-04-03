@@ -34,16 +34,18 @@ class Tile():
             self.mac = MAC(config_path)
             self.frequency = config.getfloat("Tile", "frequency")
         elif self.driver_pair == 3:
-            self.Gen_PWM = config.getboolean("Tile", "Gen_PWM")
-            if self.Gen_PWM:
+            self.gen_PWM = config.getboolean("Tile", "gen_PWM")
+            if self.gen_PWM:
                 self.PWM = PWM(config_path)
-                self.PWE_num = config.getint("Tile", "PWE_num")
+                self.PWM_num = config.getint("Tile", "PWM_num")
             self.cap_ramp = CapRamp(config_path)
             self.cap_num = config.getint("Tile", "cap_num")
         else:
             assert False, "not implemented yet"
         self.crossbar = Crossbar(config_path)
-        self.name = name 
+        self.weight_bits = config.getint("crossbar", "weight_bits")
+        self.mem_bits = config.getint("crossbar", "mem_bits")
+        self.name = name
         
 
         
@@ -56,6 +58,9 @@ class Tile():
         # i_buf_W_T, i_buf_W_E = self.input_buf.write(vector_size * 8) # T: latency E: energy
         # total_T += i_buf_W_T
         # total_E += i_buf_W_E
+        if active_cols != -1:
+            active_cols = active_cols * self.weight_bits / self.mem_bits * 2
+        # print(active_cols)
         # driver pair: 1: ADC/DAC
         if self.driver_pair == 1:
             # ######## if not latched, we need several rounds to input the vector and compute the whole MVM (TBD!)
@@ -65,7 +70,8 @@ class Tile():
                 active_rows = np.min(self.crossbar.DAC_num, vector_size)
             if active_cols == -1:
                 active_cols = self.crossbar.n_cols
-            cal_round = np.ceil(vector_size / active_rows) * np.ceil(active_cols / self.ADC_num)
+            self.cols_per_adc = self.crossbar.n_cols / self.ADC_num
+            cal_round = np.ceil(vector_size / active_rows) * np.ceil(self.cols_per_adc) # modified 4-3
             i_buf_r_T, i_buf_r_E = self.input_buf.read(active_rows)
             dac_T, dac_E = self.dac.convert()
             dac_E = dac_E * active_rows
@@ -85,7 +91,7 @@ class Tile():
             o_buf_W_T, o_buf_W_E = self.output_buf.write(active_cols)
             total_T = total_T + (i_buf_r_T + dac_T + demux_T + crossbar_T + mux_T + adc_T + mac_T + o_buf_W_T) * cal_round
             total_E = total_E + (i_buf_r_E + dac_E + demux_E + crossbar_E + mux_E + adc_E + mac_E + o_buf_W_E) * cal_round
-            # adder needed! not implemented yet really need? or Gen_PWM?
+            # adder needed! not implemented yet really need? or gen_PWM?
             local_stats = {}
             local_stats[self.name + "_i_buf_r_T"] = i_buf_r_T * cal_round
             local_stats[self.name + "_dac_T"] = dac_T * cal_round
@@ -109,15 +115,19 @@ class Tile():
             return total_T, total_E
         elif self.driver_pair == 3:
             if active_rows == -1:
-                active_rows = np.min((self.PWE_num, vector_size)) if self.Gen_PWM else vector_size
+                active_rows = np.min((self.PWM_num, vector_size)) if self.gen_PWM else vector_size
             if active_cols == -1:
                 active_cols = self.crossbar.n_cols
             local_stats = {}
             total_T, total_E = 0, 0
-            cal_round = np.ceil(vector_size / active_rows) * np.ceil(active_cols / self.cap_num)
-            if self.Gen_PWM:
+            self.cols_per_cap = self.crossbar.n_cols / self.cap_num
+            # each time, the capacitor can only collect the charge of one pos weight and one neg weight
+            cal_round = np.ceil(vector_size / active_rows) * np.ceil(self.cols_per_cap / 2)
+            # print("cal_round:", cal_round, "vector_size:", vector_size, "active_rows:", active_rows, "active_cols:", active_cols, "self.cap_num:", self.cap_num)
+            print("cal_round:", cal_round)
+            if self.gen_PWM:
                 PWM_T, PWM_E = self.PWM.convert()
-                PWM_E = PWM_E * self.PWE_num * cal_round
+                PWM_E = PWM_E * self.PWM_num * cal_round
                 PWM_T *= cal_round
                 total_T += PWM_T
                 total_E += PWM_E
@@ -130,6 +140,7 @@ class Tile():
             total_E += cap_ramp_E
             local_stats[self.name + "_cap_ramp_T"] = cap_ramp_T
             local_stats[self.name + "_cap_ramp_E"] = cap_ramp_E
+            merge_stats_add(stats, local_stats)
             return total_T, total_E
         else:
             assert(0), "unrecognized driver & collector pair"
@@ -167,8 +178,9 @@ class Tile():
             # print("############")
             # print(stats)
             # print("############")
-        return total_T, total_E
-    
+            return total_T, total_E
+        else:
+            assert(0)
     def getArea(self, stats = {}):
         if self.driver_pair == 1:
             i_buf_area = self.input_buf.getArea()
@@ -191,3 +203,20 @@ class Tile():
             local_stats[self.name + "_crossbar_area"] = crossbar_area
             merge_stats_add(stats, local_stats)
             return total_area
+        elif self.driver_pair == 3:
+            local_stats = {}
+            total_area = 0
+            if self.gen_PWM:
+                pwm_area = self.PWM.getArea() * self.PWM_num
+                total_area += pwm_area
+                local_stats[self.name + "_pwm_area"] = pwm_area 
+            cap_area = self.cap_ramp.getArea() * self.cap_num
+            total_area += cap_area
+            local_stats[self.name + "_cap_area"] = cap_area
+            crossbar_area = self.crossbar.getArea()
+            total_area += crossbar_area
+            local_stats[self.name + "_crossbar_area"] = crossbar_area
+            merge_stats_add(stats, local_stats)
+            return total_area
+        else:
+            assert(0)

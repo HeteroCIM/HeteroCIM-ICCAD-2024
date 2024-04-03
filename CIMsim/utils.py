@@ -20,3 +20,7 @@ def get_detailed_stats(total_stats, module_dicts: List[dict], module_names: List
         ret_dict[stat_name] = stat
         ratio_dict[stat_name] = stat / total_stats * 100
     return ret_dict, ratio_dict
+
+def event_scheduler(event_PP_dict):
+    cycle = 0
+    

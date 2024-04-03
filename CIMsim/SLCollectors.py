@@ -95,7 +95,11 @@ class CapRamp():
         config.read(config_path)
         self.precision = config.getint("CapRamp", "precision")
         self.tick = config.getfloat("CapRamp", "tick")
+        self.area = config.getfloat("CapRamp", "area")
+        self.power = config.getfloat("CapRamp", "power")
         self.latency = 2 ** self.precision * self.tick
-        self.energy = -1 # TODO modify
+        self.energy = self.power * self.latency
     def convert(self):
         return self.latency, self.energy
+    def getArea(self):
+        return self.area

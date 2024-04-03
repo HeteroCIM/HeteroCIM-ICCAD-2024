@@ -12,7 +12,7 @@ from CIMsim.NonlinearVecModule import *
 # dram = DRAM("config.ini")
 # print(dram.size)def 
 tile1 = Tile(name = "tile_1", config_path = "config_files/Nature23IBM_tile_PWM.ini")
-tile2 = Tile(name = "tile_2", config_path = "config_files/Nature23IBM_tile.ini")
+tile2 = Tile(name = "tile_2", config_path = "config_files/Nature23IBM_tile_PWM.ini")
 tile3 = Tile(name = "tile_3", config_path = "config_files/Nature23IBM_tile.ini")
 tile4 = Tile(name = "tile_4", config_path = "config_files/Nature23IBM_tile.ini")
 
@@ -21,9 +21,9 @@ def eventDriven():
     mm2 = VecMatMulEvent(event_name = "mm2", event_id = 2, event_dependency = [], event_status = EventStatus.wait, input_1_shape = [1,512], input_2_shape = [512,512], hardware = tile2)
     # mv1 = MoveEvent(event_name= "mv1", event_id=3, event_dependency = [], event_status=EventStatus.wait, src=tile1, dst=tile3, data_size=512*8)
     # mv2 = MoveEvent(event_name= "mv2", event_id=3, event_dependency = [], event_status=EventStatus.wait, src=tile2, dst=tile3, data_size=512*8)
-    mm3 = VecMatMulEvent(event_name = "mm3", event_id = 2, event_dependency = [], event_status = EventStatus.wait, input_1_shape = [1,512], input_2_shape = [512,512], hardware = tile3)
+    mm3 = VecMatMulEvent(event_name = "mm3", event_id = 2, event_dependency = [mm1, mm2], event_status = EventStatus.wait, input_1_shape = [1,512], input_2_shape = [512,512], hardware = tile3)
     # mv3 = MoveEvent(event_name= "mv3", event_id=3, event_dependency = [], event_status=EventStatus.wait, src=tile3, dst=tile4, data_size=512*8)
-    mm4 = VecMatMulEvent(event_name = "mm4", event_id = 2, event_dependency = [], event_status = EventStatus.wait, input_1_shape = [1,512], input_2_shape = [512,12], hardware = tile4)
+    mm4 = VecMatMulEvent(event_name = "mm4", event_id = 2, event_dependency = [mm3], event_status = EventStatus.wait, input_1_shape = [1,512], input_2_shape = [512,12], hardware = tile4)
     # event_list = [mm1, mm2, mv1, mv2, mm3, mv3, mm4]
     event_list = [mm1, mm2, mm3, mm4]
 
@@ -33,6 +33,7 @@ def eventDriven():
     inf_E = 0
     program_T  = 0
     program_E = 0
+    event_PP_dict = {}
     for event in event_list:
         dict_detail = {}
         # print(event.event_name)
@@ -42,6 +43,7 @@ def eventDriven():
         print(event.event_name + ":")
         print(stats)
         print("event:",event.event_name,"latency:", T,"energy", E)
+        event_PP_dict[event] = [T, E]
     print("inf_T:", inf_T, "inf_E:", inf_E)
     # # print("##################################################################")
     # for event in wmem_event_list:
@@ -61,28 +63,27 @@ def get_area():
     area_stats = {}
     tile_1_area_stats = {}
     tile_2_area_stats = {}
-    nvm_area_stats = {}
+    tile_3_area_stats = {}
+    tile_4_area_stats = {}
     tile_1_area = tile1.getArea(tile_1_area_stats)
     tile_2_area = tile2.getArea(tile_2_area_stats)
-    global_buffer_area = global_buffer.getArea()
-    nvm_module_area = nonlinear_vec_module.getArea(stats = nvm_area_stats)
+    tile_3_area = tile3.getArea(tile_3_area_stats)
+    tile_4_area = tile4.getArea(tile_4_area_stats)
     area_stats["area_tile_1"] = tile_1_area
     area_stats["area_tile_2"] = tile_2_area
-    area_stats["area_global_buffer"] = global_buffer_area
-    area_stats["area_nvm_module"] = nvm_module_area
+    area_stats["area_tile_3"] = tile_3_area
+    area_stats["area_tile_4"] = tile_4_area
 
     # total_area = 0
     # for value in area_stats.values():
     #     total_area += value
-    total_area = tile_1_area + tile_2_area + nvm_module_area - tile_1_area_stats["tile_1_o_buf_area"]
-    print("total_area:", total_area, "tile_1_area:", tile_1_area, "tile_2_area:", tile_2_area, "global_buffer_area", global_buffer_area, "nvm_module_area", nvm_module_area)
+    total_area = tile_1_area + tile_2_area + tile_3_area + tile_4_area
+    print("total_area:", total_area, "tile_1_area:", tile_1_area, "tile_2_area:", tile_2_area, "tile_3_area:", tile_3_area, "tile_4_area:", tile_4_area)
     print("--------------detailed stats------------------")
     print("tile_1_area_stats\n",tile_1_area_stats)
     print("tile_2_area_stats\n",tile_2_area_stats)
-    print("nvm_area_stats\n",nvm_area_stats)
-    stat_dict, ratio_dict = get_detailed_stats(total_area, [tile_1_area_stats, tile_2_area_stats], ["tile_1", "tile_2"], ["i_buf_area", "o_buf_area", "dac_area", "adc_area", "mac_area", "crossbar_area"])
-    print(stat_dict)
-    print(ratio_dict)
+    print("tile_3_area_stats\n",tile_3_area_stats)
+    print("tile_4_area_stats\n",tile_4_area_stats)
 
 eventDriven()
-# get_area()
+get_area()
