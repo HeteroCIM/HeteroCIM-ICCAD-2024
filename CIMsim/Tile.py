@@ -19,6 +19,7 @@ class Tile():
         # self.power = config.getfloat("ADC", "power")
         # self.bandwisample_ratedth = config.getfloat("ADC", "sample_rate")
         # self.bandwidth = config.getint("ADC", "precision")
+        self.name = name
         self.config_path = config_path
         self.driver_pair = config.getint("Tile", "driver_pair")
         if self.driver_pair == 1:
@@ -33,6 +34,19 @@ class Tile():
             self.inter_tile_bandwidth = config.getfloat("Tile", "inter_tile_bandwidth")
             self.mac = MAC(config_path)
             self.frequency = config.getfloat("Tile", "frequency")
+        elif self.driver_pair == 2:
+            self.PWM = PWM(config_path)
+            self.PWM_num = config.getint("Tile", "PWM_num")
+            self.ADC_num = config.getint("Tile", "ADC_num")
+            self.pulse_precision = config['Tile']['pulse_precision'].split(',')
+            for i in range(len(self.pulse_precision)):
+                self.pulse_precision[i] = int(self.pulse_precision[i])
+            self.adc = ADC(config_path)
+            self.mux = MUX(config_path)
+            self.input_buf = Buffer(self.name + "_input_buf", config_path, "Input Buffer")
+            self.output_buf = Buffer(self.name + "_output_buf", config_path, "Output Buffer") 
+            self.mac = MAC(config_path)
+
         elif self.driver_pair == 3:
             self.gen_PWM = config.getboolean("Tile", "gen_PWM")
             if self.gen_PWM:
@@ -113,6 +127,72 @@ class Tile():
 
             merge_stats_add(stats, local_stats)
             return total_T, total_E
+
+        elif self.driver_pair == 2:
+            if active_rows == -1:
+                active_rows = min(vector_size, self.PWM_num)
+            if active_cols == -1:
+                active_cols = self.crossbar.n_cols
+            self.cols_per_adc = self.crossbar.n_cols / self.ADC_num
+            cal_round = np.ceil(vector_size / active_rows) * np.ceil(self.cols_per_adc)
+            print("cal_round", cal_round)
+            local_stats = {}
+            total_T, total_E = 0, 0
+            PWM_T, PWM_E, crossbar_T, crossbar_E, ADC_T, ADC_E, mux_T, mux_E, i_buf_r_T, i_buf_r_E, o_buf_W_T, o_buf_W_E, mac_T, mac_E = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            max_p_bit = max(self.pulse_precision)
+            for p_bits in self.pulse_precision:
+                # i_buf
+                i_buf_r_t, i_buf_r_e = self.input_buf.read(active_rows)
+                i_buf_r_T = i_buf_r_t * cal_round
+                i_buf_r_E = i_buf_r_e * cal_round
+                # PWM
+                PWM_t, PWM_e = self.PWM.convert(precision = max_p_bit)
+                PWM_T += PWM_t * cal_round
+                PWM_E += PWM_e * self.PWM_num * cal_round
+                # crossbar
+                crossbar_t, crossbar_e = self.crossbar.compute(active_rows, active_cols)
+                crossbar_T += crossbar_t * cal_round
+                crossbar_E += crossbar_e * cal_round
+                # ADC
+                adc_t, adc_e = self.adc.convert()
+                adc_e *= active_cols # total number of conversion needed for one MVM
+                adc_t *= (active_cols / self.ADC_num) # number of cols that one ADC is responsible for
+                ADC_T += adc_t * cal_round
+                ADC_E += adc_e * cal_round
+                # MUX
+                mux_t, mux_e = self.mux.execute()
+                mux_e *= active_cols
+                mux_t *= (active_cols / self.ADC_num)
+                mux_T += mux_t * cal_round
+                mux_E += mux_e * cal_round
+                # mac (digital accumulate)
+                mac_t, mac_e = self.mac.compute()
+                mac_e *= active_cols * (self.crossbar.weight_bits / self.crossbar.mem_bits)
+                mac_T += mac_t * cal_round
+                mac_E += mac_e * cal_round
+            # o_buf
+            o_buf_W_t, o_buf_W_e = self.output_buf.write(active_cols)
+            o_buf_W_T += o_buf_W_t
+            o_buf_W_E += o_buf_W_e
+            total_T = total_T + PWM_T + crossbar_T + ADC_T + mux_T + i_buf_r_T + o_buf_W_T + mac_T
+            total_E = total_E + PWM_E + crossbar_E + ADC_E + mux_E + i_buf_r_E + o_buf_W_E + mac_E
+            local_stats[self.name + "_PWM_T"] = PWM_T
+            local_stats[self.name + "_crossbar_T"] = crossbar_T
+            local_stats[self.name + "_ADC_T"] = ADC_T
+            local_stats[self.name + "_mux_T"] = mux_T
+            local_stats[self.name + "_i_buf_r_T"] = i_buf_r_T
+            local_stats[self.name + "_o_buf_W_T"] = o_buf_W_T
+            local_stats[self.name + "_mac_T"] = mac_T
+            local_stats[self.name + "_PWM_E"] = PWM_E
+            local_stats[self.name + "_crossbar_E"] = crossbar_E
+            local_stats[self.name + "_ADC_E"] = ADC_E
+            local_stats[self.name + "_mux_E"] = mux_E
+            local_stats[self.name + "_i_buf_r_E"] = i_buf_r_E
+            local_stats[self.name + "_o_buf_W_E"] = o_buf_W_E
+            local_stats[self.name + "_mac_E"] = mac_E
+            merge_stats_add(stats, local_stats)
+            return total_T, total_E
+
         elif self.driver_pair == 3:
             if active_rows == -1:
                 active_rows = np.min((self.PWM_num, vector_size)) if self.gen_PWM else vector_size
@@ -124,7 +204,7 @@ class Tile():
             # each time, the capacitor can only collect the charge of one pos weight and one neg weight
             cal_round = np.ceil(vector_size / active_rows) * np.ceil(self.cols_per_cap / 2)
             # print("cal_round:", cal_round, "vector_size:", vector_size, "active_rows:", active_rows, "active_cols:", active_cols, "self.cap_num:", self.cap_num)
-            print("cal_round:", cal_round)
+            # print("cal_round:", cal_round)
             if self.gen_PWM:
                 PWM_T, PWM_E = self.PWM.convert()
                 PWM_E = PWM_E * self.PWM_num * cal_round

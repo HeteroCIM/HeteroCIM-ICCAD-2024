@@ -27,11 +27,14 @@ class PWM():
         config.read(config_path)
         self.precision = config.getint("PWM", "precision")
         self.tick = config.getfloat("PWM", "tick")
-        self.latency = 2 ** self.precision * self.tick
         self.area = config.getfloat("PWM", "area")
         self.power = config.getfloat("PWM", "power")
+
+    def convert(self, precision = -1):
+        if precision == -1:
+            precision = self.precision
+        self.latency = 2 ** precision * self.tick
         self.energy = self.power * self.latency
-    def convert(self):
         return self.latency, self.energy
     def getArea(self):
         return self.area

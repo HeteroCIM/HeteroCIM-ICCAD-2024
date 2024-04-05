@@ -23,7 +23,8 @@ class ADC():
                 case 3:
                     assert(0), "No default configs for selected ADC bits. Please enter ADC sample rate in config file"
                 case 4:
-                    assert(0), "No default configs for selected ADC bits. Please enter ADC sample rate in config file"
+                    # assert(0), "No default configs for selected ADC bits. Please enter ADC sample rate in config file"
+                    sample_rate = 1e9
                 case 5:
                     sample_rate = 12e9 # A_12-GS_s_81-mW_5-bit_Time-Interleaved_Flash_ADC_With_Background_Timing_Skew_Calibration
                 case 6: 
@@ -35,19 +36,15 @@ class ADC():
         if (self.power == -1):
             match self.precision:
                 case 1:
-                    # assert(0), "No default configs for selected ADC bits. Please enter ADC power in config file"
-                    self.power = 0.004 * 2 ** self.precision
+                    assert(0), "No default configs for selected ADC bits. Please enter ADC power in config file"
                 case 2:
-                    # assert(0), "No default configs for selected ADC bits. Please enter ADC power in config file"
-                    self.power = 0.004 * 2 ** self.precision
+                    assert(0), "No default configs for selected ADC bits. Please enter ADC power in config file"
                 case 3:
-                    # assert(0), "No default configs for selected ADC bits. Please enter ADC power in config file"
-                    self.power = 0.004 * 2 ** self.precision
+                    assert(0), "No default configs for selected ADC bits. Please enter ADC power in config file"
                 case 4:
-                    # assert(0), "No default configs for selected ADC bits. Please enter ADC power in config file"
-                    self.power = 0.004 * 2 ** self.precision
+                    self.power = 0.7e-3
                 case 5: 
-                    self.power = 0.081 # A_12-GS_s_81-mW_5-bit_Time-Interleaved_Flash_ADC_With_Background_Timing_Skew_Calibration
+                    assert(0), "No default configs for selected ADC bits. Please enter ADC power in config file"
                 case 6:
                     self.power = 1.26e-3 # Area-Efficient 1GS/s 6b SAR ADC with Charge Injection-Cell-Based DAC
                 case 7:
