@@ -37,35 +37,5 @@ def eventDriven():
         print("event:",event.event_name,"latency:", T,"energy", E)
         event_PP_dict[event] = [T, E]
     print("inf_T:", inf_T, "inf_E:", inf_E)
-    # # print("##################################################################")
-    # for event in wmem_event_list:
-    #     dict_detail = {}
-    #     T, E, stats = executeEvent(event)
-    #     program_T += T
-    #     program_E += E
-    #     # print(event.event_name + ":")
-    #     # print(stats)
-    #     # print("event:",event.event_name,"latency:", T,"energy", E)
-    # print("program_T:", program_T, "program_E:", program_E)
-    # total_T = inf_T + program_T
-    # total_E = inf_E + program_E
-    # print("total_T:", total_T, "total_E:", total_E)
 
-def get_area():
-    area_stats = {}
-    tile_1_area_stats = {}
-    tile_2_area_stats = {}
-    tile_3_area_stats = {}
-    tile_4_area_stats = {}
-    tile_1_area = tile_1.getArea(tile_1_area_stats)
-    area_stats["area_tile_1"] = tile_1_area
-
-    # total_area = 0
-    # for value in area_stats.values():
-    #     total_area += value
-    total_area = tile_1_area
-    print("total_area:", total_area, "tile_1_area:", tile_1_area)
-    print("--------------detailed stats------------------")
-    print("tile_1_area_stats\n",tile_1_area_stats)
 eventDriven()
-get_area()

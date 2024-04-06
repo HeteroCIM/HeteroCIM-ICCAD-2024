@@ -6,7 +6,7 @@ class MAC():
         config = cp.ConfigParser()
         config.read(config_path)
         if frequency == -1:
-            frequency = config.getfloat("Tile", "frequency")
+            frequency = config.getfloat("PE", "frequency")
         # default config comes from "Efficient Fixed/Floating-Point Merged Mixed-Precision Multiply-Accumulate Unit for Deep Learning Processors"
         cycles = config.getfloat("MAC", "MAC_latency") if config.getfloat("MAC", "MAC_latency")!= -1 else 2
         self.latency = cycles * 1 / frequency

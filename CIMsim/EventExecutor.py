@@ -1,7 +1,7 @@
 from CIMsim.DRAM import *
 from CIMsim.Crossbar import *
 from CIMsim.Event import *
-from CIMsim.Tile import *
+from CIMsim.PE import *
 from CIMsim.Buffer import *
 from CIMsim.NonlinearVecModule import *
 def executeEvent(event):
@@ -14,7 +14,7 @@ def executeEvent(event):
             event_T = max(src_read_T, dst_write_T)
             event_E = src_read_E + dst_write_E
             return event_T, event_E, global_stats
-        elif isinstance(event.dst, Tile):
+        elif isinstance(event.dst, PE):
             src_read_T, src_read_E = event.src.read(data_size = event.data_size, stats = global_stats)
             dst_write_T, dst_write_E = event.dst.input_buf.write(data_size = event.data_size, stats = global_stats)
             event_T = max(src_read_T, dst_write_T)
@@ -26,60 +26,60 @@ def executeEvent(event):
         src_read_T, src_read_E = 0, 0
         if isinstance(event.src, Buffer):
             src_read_T, src_read_E = event.src.read(event.data_size, stats = global_stats)
-        elif isinstance(event.src, Tile):
+        elif isinstance(event.src, PE):
             src_read_T, src_read_E = event.src.output_buf.read(event.data_size, stats = global_stats)
         dst_write_T, dst_write_E = event.dst.write(event.data_size, stats = global_stats)
         event_T = max(src_read_T, dst_write_T)
         event_E = src_read_E + dst_write_E
         return event_T, event_E, global_stats
     elif event.event_type == EventType.WriteEvent:
-        assert isinstance(event.tile, Tile), "write event must be executed in a tile"
-        event_T, event_E = event.tile.update(event.n_rows, event.n_cols, stats = global_stats)
+        assert isinstance(event.PE, PE), "write event must be executed in a PE"
+        event_T, event_E = event.PE.update(event.n_rows, event.n_cols, stats = global_stats)
         return event_T, event_E, global_stats
 
     elif event.event_type == EventType.MoveEvent:
         if isinstance(event.src, Buffer) and isinstance(event.dst, Buffer):
             # data transmission between buffer and buffer
             assert 0, "why it happens?"
-        elif isinstance(event.src, Buffer) and isinstance(event.dst, Tile):
-            # data transmission from global buffer to tile
+        elif isinstance(event.src, Buffer) and isinstance(event.dst, PE):
+            # data transmission from global buffer to PE
             src_read_T, src_read_E = event.src.read(event.data_size, stats = global_stats)
             dst_write_T, dst_write_E = event.dst.input_buf.write(event.data_size, stats = global_stats)
             event_T = max(src_read_T, dst_write_T)
             event_E = src_read_E + dst_write_E
             return event_T, event_E, global_stats
-        elif isinstance(event.src, Tile) and isinstance(event.dst, Tile):
-            # data transmission between tile and tile
+        elif isinstance(event.src, PE) and isinstance(event.dst, PE):
+            # data transmission between PE and PE
             src_read_T, src_read_E = event.src.output_buf.read(event.data_size, stats = global_stats)
             dst_write_T, dst_write_E = event.dst.input_buf.write(event.data_size, stats = global_stats)
             # # need to check
-            # bus_T = event.data_size / event.dst.inter_tile_bandwidth
+            # bus_T = event.data_size / event.dst.inter_PE_bandwidth
             event_T = max(src_read_T, dst_write_T) #, bus_T)
             event_E = src_read_E + dst_write_E
             return event_T, event_E, global_stats
-        elif isinstance(event.src, Tile) and isinstance(event.dst, Buffer):
-            # data transmission from tile to global buffer
+        elif isinstance(event.src, PE) and isinstance(event.dst, Buffer):
+            # data transmission from PE to global buffer
             src_read_T, src_read_E = event.src.output_buf.read(event.data_size, stats = global_stats)
             dst_write_T, dst_write_E = event.dst.write(event.data_size, stats = global_stats)
             event_T = max(src_read_T, dst_write_T)
             event_E = src_read_E + dst_write_E
             return event_T, event_E, global_stats
-        elif isinstance(event.src, Tile) and isinstance(event.dst, NonlinearVecModule):
-            # data transmission between tile and tile
+        elif isinstance(event.src, PE) and isinstance(event.dst, NonlinearVecModule):
+            # data transmission between PE and PE
             src_read_T, src_read_E = event.src.output_buf.read(event.data_size, stats = global_stats)
             dst_write_T, dst_write_E = event.dst.nvm_buf.write(event.data_size, stats = global_stats)
             event_T = max(src_read_T, dst_write_T)
             event_E = src_read_E + dst_write_E
             return event_T, event_E, global_stats
-        elif isinstance(event.src, NonlinearVecModule) and isinstance(event.dst, Tile):
-            # data transmission between tile and tile
+        elif isinstance(event.src, NonlinearVecModule) and isinstance(event.dst, PE):
+            # data transmission between PE and PE
             src_read_T, src_read_E = event.src.nvm_buf.read(event.data_size, stats = global_stats)
             dst_write_T, dst_write_E = event.dst.input_buf.write(event.data_size, stats = global_stats)
             event_T = max(src_read_T, dst_write_T)
             event_E = src_read_E + dst_write_E
             return event_T, event_E, global_stats
     elif event.event_type == EventType.VecMatMulEvent:
-        assert isinstance(event.hardware, Tile), "matmul must be calculated in tile!"
+        assert isinstance(event.hardware, PE), "matmul must be calculated in PE!"
         assert event.input_1_shape[1] == event.input_2_shape[0], "matrix dimensions don't match!"
         event_T = 0
         event_E = 0

@@ -61,11 +61,11 @@ class MoveEvent(BaseEvent):
 
 class WriteEvent(BaseEvent):
     # write weight into crossbar
-    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, n_rows: int, n_cols: int, tile: Tile):
+    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, n_rows: int, n_cols: int, PE: PE):
         super().__init__(event_name, EventType.WriteEvent, event_id, event_dependency, event_status)
         self.n_rows = n_rows
         self.n_cols = n_cols
-        self.tile = tile
+        self.PE = PE
 
 class ActivationEvent(BaseEvent):
     # elementwise activation, executed in the vector module. 
