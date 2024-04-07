@@ -18,9 +18,9 @@ tile1 = Tile(name = "tile1", config_path = "test_tile_1.ini")
 def eventDriven():
     ld1 = LoadEvent(event_name = "ld1", event_id = 1, event_dependency = [], event_status = EventStatus.wait, src=dram, dst=tile1.PEs[0], data_size=784*8)
     mm1 = VecMatMulEvent(event_name = "mm1", event_id = 2, event_dependency = [ld1], event_status = EventStatus.wait, input_1_shape = [1,784], input_2_shape = [784,100], hardware = tile1.PEs[0])
-    # st1 = StoreEvent(event_name = "st1", event_id = 1, event_dependency = [], event_status = EventStatus.wait, src=tile2, dst=dram, data_size=10*8)
+    st1 = StoreEvent(event_name = "st1", event_id = 1, event_dependency = [], event_status = EventStatus.wait, src=tile1.PEs[0], dst=dram, data_size=10*8)
     # event_list = [ld1, mm1, mv1, mm2]
-    event_list = [ld1]
+    event_list = [ld1, st1]
 
     inf_T  = 0
     inf_E = 0
@@ -32,8 +32,8 @@ def eventDriven():
         T, E, stats = executeEvent(event)
         inf_T += T
         inf_E += E
-        # print(stats)
-        # print("event:",event.event_name,"latency:", T,"energy", E)
+        print(stats)
+        print("event:",event.event_name,"latency:", T,"energy", E)
     print("inf_T:", inf_T, "inf_E:", inf_E)
     # print("##################################################################")
 
@@ -59,4 +59,4 @@ def get_area():
     print("tile_1_area_stats\n",tile_1_area_stats)
 
 eventDriven()
-get_area()
+# get_area()

@@ -44,14 +44,14 @@ class DRAM():
             self.trace_count += 1
             os.system("python " + self.DRAMsim3_trace_gen_path + " -n " + str(n_requests) + " -b " +  str(self.bus_width) + " -r 100000000 -s stream -f dramsim3 -o " +  self.DRAMsim3_trace_dir_path + " -m " + name)
             # run DRAMsim3
-            print("./" + self.DRAMsim3_exe_path + " " + self.DRAMsim3_config_filename + " -c 1000000 -t " +  self.DRAMsim3_trace_dir_path + name)
-            os.system("./" + self.DRAMsim3_exe_path + " " + self.DRAMsim3_config_filename + " -c 1000000 -t " +  self.DRAMsim3_trace_dir_path + name + " -o " + self.DRAMsim3_res_dir_path)
+            # print("./" + self.DRAMsim3_exe_path + " " + self.DRAMsim3_config_filename + " -c 100000 -t " +  self.DRAMsim3_trace_dir_path + name)
+            os.system("./" + self.DRAMsim3_exe_path + " " + self.DRAMsim3_config_filename + " -c 100000 -t " +  self.DRAMsim3_trace_dir_path + name + " -o " + self.DRAMsim3_res_dir_path)
             # read results
             with open(self.DRAMsim3_res_dir_path + "dramsim3.json",'r', encoding='utf8') as js:
                 json_data = json.load(js)
             avg_cycles = json_data["0"]["average_read_latency"]
             latency = avg_cycles * n_requests * (1 / self.DRAM_frequency / 1e6)
-            energy = json_data["0"]["total_energy"] * 1e-12
+            energy = json_data["0"]["read_energy"] * 1e-12
         else:
             assert(0), "cannot find dram model backend. Now support CIMsim and DRAMsim3 only"
         # stats
@@ -63,17 +63,28 @@ class DRAM():
     def write(self, data_size, stats = {}):
         # data_size: bit
         if self.model_type == "CIMsim":
-            latency = (self.write_access_latency + data_size / self.bit_width) / self.dram_frequency
+            latency = (self.write_access_latency + data_size / self.bit_width) / self.DRAM_frequency
             energy = self.energy_per_bit * data_size
         elif self.model_type == "DRAMsim3":
             n_requests = int(data_size / self.bus_width)
-            # gen trace
-            name = "DRAM_write_" + str(self.trace_count)
+            # generate trace
+            name = "DRAM_read_" + str(self.trace_count)
             self.trace_count += 1
             os.system("python " + self.DRAMsim3_trace_gen_path + " -n " + str(n_requests) + " -b " +  str(self.bus_width) + " -r 0 -s stream -f dramsim3 -o " +  self.DRAMsim3_trace_dir_path + " -m " + name)
+            # run DRAMsim3
+            # print("./" + self.DRAMsim3_exe_path + " " + self.DRAMsim3_config_filename + " -c 100000 -t " +  self.DRAMsim3_trace_dir_path + name)
+            os.system("./" + self.DRAMsim3_exe_path + " " + self.DRAMsim3_config_filename + " -c 100000 -t " +  self.DRAMsim3_trace_dir_path + name + " -o " + self.DRAMsim3_res_dir_path)
+            # read results
+            with open(self.DRAMsim3_res_dir_path + "dramsim3.json",'r', encoding='utf8') as js:
+                json_data = json.load(js)
+            write_cycles_dict = json_data["0"]["write_latency"]
+            write_cycles = 0
+            for key in write_cycles_dict.keys():
+                write_cycles += int(key) * int(write_cycles_dict[key])
+            latency = write_cycles * (1 / self.DRAM_frequency / 1e6)
+            energy = json_data["0"]["write_energy"] * 1e-12
         else:
             assert(0), "cannot find dram model backend. Now support CIMsim and DRAMsim3 only"
-
         # stats
         local_stats = {}
         local_stats[self.name + "_dram_w_T"] = latency
