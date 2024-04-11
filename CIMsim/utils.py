@@ -1,4 +1,11 @@
 from typing import List
+from CIMsim.DRAM import *
+from CIMsim.Crossbar import *
+from CIMsim.Event import *
+from CIMsim.Tile import *
+from CIMsim.Buffer import *
+from CIMsim.EventExecutor import *
+from CIMsim.NonlinearVecModule import *
 def merge_stats_add(dict_1, dict_2):
     dict_1_keys = dict_1.keys()
     dict_2_keys = dict_2.keys()
@@ -23,4 +30,31 @@ def get_detailed_stats(total_stats, module_dicts: List[dict], module_names: List
 
 def event_scheduler(event_PP_dict):
     cycle = 0
-    
+
+def event_type_to_string(event_type):
+    if event_type == EventType.CrossbarMultEvent:
+        return "CrossbarMultEvent"
+    elif event_type == EventType.LoadEvent:
+        return "LoadEvent"
+    elif event_type == EventType.StoreEvent:
+        return "StoreEvent"
+    elif event_type == EventType.MoveEvent:
+        return "MoveEvent"
+    elif event_type == EventType.CrossbarWriteEvent:
+        return "CrossbarWriteEvent"
+    elif event_type == EventType.ActivationEvent:
+        return "ActivationEvent"
+    elif event_type == EventType.VectorEvent:
+        return "VectorEvent"
+    elif event_type == EventType.ReduceEvent:
+        return "ReduceEvent"
+    elif event_type == EventType.FPGABatMatmulEvent:
+        return "FPGABatMatmulEvent"
+    elif event_type == EventType.MergeEvent:
+        return "MergeEvent"
+def event_to_string(event):
+    str_type = event_type_to_string(event.event_type)
+    str_id = event.event_id
+    str_name = event.event_name
+    str_event = "event_id: " + str(str_id) + "  event_name: " + str_name + "  event_type: " + str_type
+    return str_event

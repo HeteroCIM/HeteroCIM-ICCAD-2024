@@ -21,20 +21,20 @@ nonlinear_vec_module = NonlinearVecModule(name = "nvm", config_path = "config_fi
 def eventDriven():
     st0 = StoreEvent(event_name = "st1", event_id = 1, event_dependency = [], event_status = EventStatus.wait, src=cpu_cache, dst=dram, data_size=784*8)
     ld1 = LoadEvent(event_name = "ld1", event_id = 1, event_dependency = [], event_status = EventStatus.wait, src=dram, dst=tile1, data_size=784*8)
-    mm1 = VecMatMulEvent(event_name = "mm1", event_id = 2, event_dependency = [ld1], event_status = EventStatus.wait, input_1_shape = [1,784], input_2_shape = [784,100], hardware = tile1)
+    mm1 = CrossbarMultEvent(event_name = "mm1", event_id = 2, event_dependency = [ld1], event_status = EventStatus.wait, input_1_shape = [1,784], input_2_shape = [784,100], hardware = tile1)
     mv1 = MoveEvent(event_name= "mv1", event_id=3, event_dependency = [mm1], event_status=EventStatus.wait, src=tile1, dst=nonlinear_vec_module, data_size=100*8)
     nvm1 = ActivationEvent(event_name= "nvm1", event_id=3, event_dependency = [mm1], event_status=EventStatus.wait, input_shape = [1,100], activation_name = "ReLU", hardware = nonlinear_vec_module)
     mv2 = MoveEvent(event_name= "mv2", event_id=3, event_dependency = [], event_status=EventStatus.wait, src=nonlinear_vec_module, dst=tile2, data_size=100*8)
-    mm2 = VecMatMulEvent(event_name = "mm2", event_id = 3, event_dependency = [mv1], event_status = EventStatus.wait, input_1_shape = [1,100], input_2_shape = [100,10], hardware = tile2)
+    mm2 = CrossbarMultEvent(event_name = "mm2", event_id = 3, event_dependency = [mv1], event_status = EventStatus.wait, input_1_shape = [1,100], input_2_shape = [100,10], hardware = tile2)
     st1 = StoreEvent(event_name = "st1", event_id = 1, event_dependency = [], event_status = EventStatus.wait, src=tile2, dst=dram, data_size=10*8)
     # event_list = [ld1, mm1, mv1, mm2]
     event_list = [st0, ld1, mm1, mv1, nvm1, mv2, mm2, st1]
 
 
     ld2 = LoadEvent(event_name = "ld2", event_id = 1, event_dependency = [], event_status = EventStatus.wait, src=dram, dst=tile1, data_size=784*100*8)
-    wmem1 = WriteEvent(event_name = "wmem1", event_id = 1, event_dependency = [], event_status = EventStatus.wait, n_rows = 784, n_cols = 100, tile = tile1)
+    wmem1 = CrossbarWriteEvent(event_name = "wmem1", event_id = 1, event_dependency = [], event_status = EventStatus.wait, n_rows = 784, n_cols = 100, tile = tile1)
     ld3 = LoadEvent(event_name = "ld3", event_id = 1, event_dependency = [], event_status = EventStatus.wait, src=dram, dst=tile2, data_size=100*10*8)
-    wmem2 = WriteEvent(event_name = "wmem2", event_id = 1, event_dependency = [], event_status = EventStatus.wait, n_rows = 100, n_cols = 10, tile = tile2)
+    wmem2 = CrossbarWriteEvent(event_name = "wmem2", event_id = 1, event_dependency = [], event_status = EventStatus.wait, n_rows = 100, n_cols = 10, tile = tile2)
     wmem_event_list = [ld2, wmem1, ld3, wmem2] 
 
 

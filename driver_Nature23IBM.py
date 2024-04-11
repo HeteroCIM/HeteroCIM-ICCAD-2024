@@ -17,13 +17,13 @@ tile3 = Tile(name = "tile_3", config_path = "config_files/Nature23IBM_tile.ini")
 tile4 = Tile(name = "tile_4", config_path = "config_files/Nature23IBM_tile.ini")
 
 def eventDriven():
-    mm1 = VecMatMulEvent(event_name = "mm1", event_id = 2, event_dependency = [], event_status = EventStatus.wait, input_1_shape = [1,512], input_2_shape = [512,512], hardware = tile1)
-    mm2 = VecMatMulEvent(event_name = "mm2", event_id = 2, event_dependency = [], event_status = EventStatus.wait, input_1_shape = [1,512], input_2_shape = [512,512], hardware = tile2)
+    mm1 = CrossbarMultEvent(event_name = "mm1", event_id = 2, event_dependency = [], event_status = EventStatus.wait, input_1_shape = [1,512], input_2_shape = [512,512], hardware = tile1)
+    mm2 = CrossbarMultEvent(event_name = "mm2", event_id = 2, event_dependency = [], event_status = EventStatus.wait, input_1_shape = [1,512], input_2_shape = [512,512], hardware = tile2)
     # mv1 = MoveEvent(event_name= "mv1", event_id=3, event_dependency = [], event_status=EventStatus.wait, src=tile1, dst=tile3, data_size=512*8)
     # mv2 = MoveEvent(event_name= "mv2", event_id=3, event_dependency = [], event_status=EventStatus.wait, src=tile2, dst=tile3, data_size=512*8)
-    mm3 = VecMatMulEvent(event_name = "mm3", event_id = 2, event_dependency = [mm1, mm2], event_status = EventStatus.wait, input_1_shape = [1,512], input_2_shape = [512,512], hardware = tile3)
+    mm3 = CrossbarMultEvent(event_name = "mm3", event_id = 2, event_dependency = [mm1, mm2], event_status = EventStatus.wait, input_1_shape = [1,512], input_2_shape = [512,512], hardware = tile3)
     # mv3 = MoveEvent(event_name= "mv3", event_id=3, event_dependency = [], event_status=EventStatus.wait, src=tile3, dst=tile4, data_size=512*8)
-    mm4 = VecMatMulEvent(event_name = "mm4", event_id = 2, event_dependency = [mm3], event_status = EventStatus.wait, input_1_shape = [1,512], input_2_shape = [512,12], hardware = tile4)
+    mm4 = CrossbarMultEvent(event_name = "mm4", event_id = 2, event_dependency = [mm3], event_status = EventStatus.wait, input_1_shape = [1,512], input_2_shape = [512,12], hardware = tile4)
     # event_list = [mm1, mm2, mv1, mv2, mm3, mv3, mm4]
     event_list = [mm1, mm2, mm3, mm4]
 

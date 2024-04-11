@@ -16,9 +16,9 @@ tile_2 = Tile(name = "tile_2", config_path = "config_files/ISSCC21-16.1_tile_4b.
 tile_3 = Tile(name = "tile_3", config_path = "config_files/ISSCC21-16.1_tile_2b.ini")
 
 def eventDriven():
-    mm1 = VecMatMulEvent(event_name = "mm1", event_id = 2, event_dependency = [], event_status = EventStatus.wait, input_1_shape = [1,512], input_2_shape = [512,128], hardware = tile_1)
-    mm2 = VecMatMulEvent(event_name = "mm2", event_id = 2, event_dependency = [], event_status = EventStatus.wait, input_1_shape = [1,512], input_2_shape = [512,256], hardware = tile_2)
-    mm3 = VecMatMulEvent(event_name = "mm3", event_id = 2, event_dependency = [], event_status = EventStatus.wait, input_1_shape = [1,512], input_2_shape = [512,512], hardware = tile_3)
+    mm1 = CrossbarMultEvent(event_name = "mm1", event_id = 2, event_dependency = [], event_status = EventStatus.wait, input_1_shape = [1,512], input_2_shape = [512,128], hardware = tile_1)
+    mm2 = CrossbarMultEvent(event_name = "mm2", event_id = 2, event_dependency = [], event_status = EventStatus.wait, input_1_shape = [1,512], input_2_shape = [512,256], hardware = tile_2)
+    mm3 = CrossbarMultEvent(event_name = "mm3", event_id = 2, event_dependency = [], event_status = EventStatus.wait, input_1_shape = [1,512], input_2_shape = [512,512], hardware = tile_3)
     event_list = [mm1, mm2, mm3]
 
     inf_T  = 0

@@ -32,7 +32,7 @@ def executeEvent(event):
         event_T = max(src_read_T, dst_write_T)
         event_E = src_read_E + dst_write_E
         return event_T, event_E, global_stats
-    elif event.event_type == EventType.WriteEvent:
+    elif event.event_type == EventType.CrossbarWriteEvent:
         assert isinstance(event.PE, PE), "write event must be executed in a PE"
         event_T, event_E = event.PE.update(event.n_rows, event.n_cols, stats = global_stats)
         return event_T, event_E, global_stats
@@ -78,7 +78,7 @@ def executeEvent(event):
             event_T = max(src_read_T, dst_write_T)
             event_E = src_read_E + dst_write_E
             return event_T, event_E, global_stats
-    elif event.event_type == EventType.VecMatMulEvent:
+    elif event.event_type == EventType.CrossbarMultEvent:
         assert isinstance(event.hardware, PE), "matmul must be calculated in PE!"
         assert event.input_1_shape[1] == event.input_2_shape[0], "matrix dimensions don't match!"
         event_T = 0
