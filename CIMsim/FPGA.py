@@ -20,8 +20,8 @@ class FPGA():
             self.hardware = OPU()
         else:
             assert(0), "For now, we only support coarse-grained OPU model for FPGA config"
-        self.FPGA_buf = Buffer(self.name + "_FPGA_buf", config_path, "FPGA Buffer")
-        self.NVM_reg = Buffer(self.name + "_NVM_vreg", config_path, "NVM VREG")
+        self.FPGA_buf = Buffer(self.name + "_FPGA_buf", config_path, "FPGA Buffer", self)
+        self.NVM_reg = Buffer(self.name + "_NVM_vreg", config_path, "NVM VREG", self)
 
 class OPU():
     # paper cited

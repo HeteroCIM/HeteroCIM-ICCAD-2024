@@ -31,27 +31,21 @@ def get_detailed_stats(total_stats, module_dicts: List[dict], module_names: List
 def event_scheduler(event_PP_dict):
     cycle = 0
 
+event_type_to_string_dict = {
+    EventType.CrossbarMultEvent: "CrossbarMultEvent",
+    EventType.LoadEvent: "LoadEvent",
+    EventType.StoreEvent: "StoreEvent",
+    EventType.MoveEvent: "MoveEvent",
+    EventType.CrossbarWriteEvent: "CrossbarWriteEvent",
+    EventType.ActivationEvent: "ActivationEvent",
+    EventType.VectorEvent: "VectorEvent",
+    EventType.ReduceEvent: "ReduceEvent",
+    EventType.FPGABatMatmulEvent: "FPGABatMatmulEvent",
+    EventType.MergeEvent: "MergeEvent"
+}
+
 def event_type_to_string(event_type):
-    if event_type == EventType.CrossbarMultEvent:
-        return "CrossbarMultEvent"
-    elif event_type == EventType.LoadEvent:
-        return "LoadEvent"
-    elif event_type == EventType.StoreEvent:
-        return "StoreEvent"
-    elif event_type == EventType.MoveEvent:
-        return "MoveEvent"
-    elif event_type == EventType.CrossbarWriteEvent:
-        return "CrossbarWriteEvent"
-    elif event_type == EventType.ActivationEvent:
-        return "ActivationEvent"
-    elif event_type == EventType.VectorEvent:
-        return "VectorEvent"
-    elif event_type == EventType.ReduceEvent:
-        return "ReduceEvent"
-    elif event_type == EventType.FPGABatMatmulEvent:
-        return "FPGABatMatmulEvent"
-    elif event_type == EventType.MergeEvent:
-        return "MergeEvent"
+    return event_type_to_string_dict[event_type]
 def event_to_string(event):
     str_type = event_type_to_string(event.event_type)
     str_id = event.event_id

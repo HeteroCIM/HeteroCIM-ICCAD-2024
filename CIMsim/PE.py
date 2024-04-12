@@ -26,8 +26,8 @@ class PE():
             self.dac = DAC(config_path)
             self.mux = MUX(config_path)
             self.demux = DeMUX(config_path)
-            self.input_buf = Buffer(self.name + "_input_buf", config_path, "Input Buffer")
-            self.output_buf = Buffer(self.name + "_output_buf", config_path, "Output Buffer") 
+            self.input_buf = Buffer(self.name + "_input_buf", config_path, "Input Buffer", self)
+            self.output_buf = Buffer(self.name + "_output_buf", config_path, "Output Buffer", self) 
             self.inter_PE_bandwidth = config.getfloat("PE", "inter_PE_bandwidth")
             self.mac = MAC(config_path)
             self.frequency = config.getfloat("PE", "frequency")
@@ -40,8 +40,8 @@ class PE():
                 self.pulse_precision[i] = int(self.pulse_precision[i])
             self.adc = ADC(config_path)
             self.mux = MUX(config_path)
-            self.input_buf = Buffer(self.name + "_input_buf", config_path, "Input Buffer")
-            self.output_buf = Buffer(self.name + "_output_buf", config_path, "Output Buffer") 
+            self.input_buf = Buffer(self.name + "_input_buf", config_path, "Input Buffer", self)
+            self.output_buf = Buffer(self.name + "_output_buf", config_path, "Output Buffer", self) 
             self.mac = MAC(config_path)
 
         elif self.driver_pair == 3:

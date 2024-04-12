@@ -63,7 +63,7 @@ class NonlinearVecModule():
             "ELU": {4:3, 8:6, 16:24, 32:281},
             "SiLU": {4:3, 8:9, 16:36, 32:485}
         }
-        self.nvm_buf = Buffer(self.name + "_input_buf", config_path, "NonlinearVectorModule Buffer")
+        self.nvm_buf = Buffer(self.name + "_input_buf", config_path, "NonlinearVectorModule Buffer", self)
         self.activaton_module_dict = {}
         for func in activation_func_list:
             if config.getboolean("NonlinearVecModule", "has_" + func):

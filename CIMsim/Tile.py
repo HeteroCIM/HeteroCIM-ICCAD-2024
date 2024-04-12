@@ -21,8 +21,8 @@ class Tile():
         self.name = name
         self.PE_num = config.getint("Tile", "PE_num")
         self.has_ReLU = config.getboolean("Tile", "has_ReLU")
-        self.tile_in_buf = Buffer(self.name + "_tile_in_buf", config_path, "Tile Input Buffer")
-        self.tile_out_buf = Buffer(self.name + "_tile_out_buf", config_path, "Tile Output Buffer")
+        self.tile_in_buf = Buffer(self.name + "_tile_in_buf", config_path, "Tile Input Buffer", self)
+        self.tile_out_buf = Buffer(self.name + "_tile_out_buf", config_path, "Tile Output Buffer", self)
         self.PEs = []
         for i in range(self.PE_num):
             self.PEs.append(PE(self.name + "_PE_" + str(i), config_path))

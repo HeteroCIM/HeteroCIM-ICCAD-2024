@@ -1,7 +1,7 @@
 import configparser as cp
 from CIMsim.utils import *
 class Buffer():
-    def __init__(self, name="default_buffer", config_path = "", key = "Buffer"):
+    def __init__(self, name="default_buffer", config_path = "", key = "Buffer", parent = None):
         assert config_path != "", "cannot find config file!"
         config = cp.ConfigParser()
         config.read(config_path)
@@ -11,6 +11,7 @@ class Buffer():
         self.bit_width = config.getfloat(key, "bit_width") if config.getfloat(key, "bit_width") != -1 else 64
         self.buffer_frequency = config.getfloat(key, "buffer_frequency") if config.getfloat(key, "buffer_frequency") != -1 else 200e9
         self.name = name
+        self.parent = parent
         self.area_dict = {
             32768: 21240.78, #4kB
             65536: 25091.68, #8kB
