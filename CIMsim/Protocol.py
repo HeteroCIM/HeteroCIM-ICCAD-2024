@@ -31,19 +31,22 @@ class PCIe():
             6: 64e9 * 128 / 130,
         }
         self.energy_efficiency_dict = {
-            # cannot get data
-            1: 0,
-            2: 0,
-            3: 0,
-            4: 0,
-            5: 0,
-            6: 0,
+            # data of gen5 is accurate
+            1: 6.5e-12,
+            2: 6.5e-12,
+            3: 6.5e-12,
+            4: 6.5e-12,
+            5: 6.5e-12,
+            6: 6.5e-12,
         }
         self.bandwidth = self.single_direction_rate_dict[self.gen] * self.lanes
     def transmission(self, src, dst, data_size, stats = {}):
-        T_src, E_src= src.read()
-        T_dst, E_dst = dst.write()
-        T_bus = data_size / bandwidth
+        T_src, E_src= src.read(data_size)
+        T_dst, E_dst = dst.write(data_size)
+        T_bus = data_size / self.bandwidth
+        E_bus = data_size * self.energy_efficiency_dict[self.gen]
+        # print("T_src: ", T_src, "T_dst", T_dst, "T_bus", T_bus)
+        # print("src: ", src, "dst", dst)
         T = max(T_src, T_dst, T_bus)
-        E = E_src + E_dst
+        E = E_src + E_dst + E_bus
         return T, E

@@ -1,5 +1,6 @@
 import configparser as cp
-from CIMsim.utils import *
+from CIMsim.utils import merge_stats_add
+
 class Buffer():
     def __init__(self, name="default_buffer", config_path = "", key = "Buffer", parent = None):
         assert config_path != "", "cannot find config file!"
@@ -8,8 +9,8 @@ class Buffer():
         self.access_cycles = config.getfloat(key, "access_latency") if config.getfloat(key, "access_latency") != -1 else 1
         self.energy_per_bit = config.getfloat(key, "energy_per_bit") if config.getfloat(key, "energy_per_bit") != -1 else 1e-12
         self.size = config.getfloat(key, "size") if config.getfloat(key, "size") != -1 else 524288
-        self.bit_width = config.getfloat(key, "bit_width") if config.getfloat(key, "bit_width") != -1 else 64
-        self.buffer_frequency = config.getfloat(key, "buffer_frequency") if config.getfloat(key, "buffer_frequency") != -1 else 200e9
+        self.bit_width = config.getfloat(key, "bit_width") if config.getfloat(key, "bit_width") != -1 else 256
+        self.buffer_frequency = config.getfloat(key, "buffer_frequency") if config.getfloat(key, "buffer_frequency") != -1 else 300e9
         self.name = name
         self.parent = parent
         self.area_dict = {

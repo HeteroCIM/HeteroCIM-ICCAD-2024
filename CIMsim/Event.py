@@ -39,6 +39,26 @@ class EventStatus(Enum):
     process = 1
     complete = 2
 
+def vector_event_type_to_string(vector_event_type):
+    vector_event_type_to_string_dict = {
+        VectorEventType.VectorReLU: "VectorReLU",
+        VectorEventType.VectorAdd: "VectorAdd",
+        VectorEventType.VectorSub: "VectorSub",
+        VectorEventType.VectorMul: "VectorMul",
+        VectorEventType.VectorDiv: "VectorDiv",
+        VectorEventType.VectorMax: "VectorMax",
+        VectorEventType.VectorMin: "VectorMin",
+        VectorEventType.VectorExp: "VectorExp",
+        VectorEventType.VectorSqrt: "VectorSqrt",
+        VectorEventType.VectorPReLU: "VectorPReLU",
+        VectorEventType.VectorGeLU: "VectorGeLU",
+        VectorEventType.VectorSigmoid: "VectorSigmoid",
+        VectorEventType.VectorTanh: "VectorTanh",
+        VectorEventType.VectorELU: "VectorELU",
+        VectorEventType.VectorSiLU: "VectorSiLU"
+    }
+    return vector_event_type_to_string_dict[vector_event_type]
+
 class BaseEvent(object):
     def __init__(self, event_name: str, event_type: EventType, event_id: int, event_dependency: List, event_status: EventStatus):
         self.event_name = event_name
@@ -46,6 +66,7 @@ class BaseEvent(object):
         self.event_id = event_id
         self.event_dependency = event_dependency
         self.event_status = event_status
+        self.attr = {}
 
 class CrossbarMultEvent(BaseEvent):
     def __init__(self, event_name: str, event_id: int, event_dependency: List[BaseEvent], event_status: EventStatus, input_1_shape: List[int], input_2_shape: List[int], hardware):
@@ -57,73 +78,84 @@ class CrossbarMultEvent(BaseEvent):
 
 class LoadEvent(BaseEvent):
     # load from DRAM
-    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, src, dst, data_size: int):
+    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, src, dst, size: int, data_bits: int):
         super().__init__(event_name, EventType.LoadEvent, event_id, event_dependency, event_status)
         self.src = src
         self.dst = dst
-        self.data_size = data_size
+        self.size = size
+        self.data_bits = data_bits
 
 class StoreEvent(BaseEvent):
     # store to DRAM
-    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, src, dst, data_size: int):
+    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, src, dst, size: int, data_bits: int):
         super().__init__(event_name, EventType.StoreEvent, event_id, event_dependency, event_status)
         self.src = src
         self.dst = dst
-        self.data_size = data_size
+        self.size = size
+        self.data_bits = data_bits
 
 class MoveEvent(BaseEvent):
     # move between buffer/regs
-    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, src, dst, data_size: int):
+    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, src, dst, size: int, data_bits: int):
         super().__init__(event_name, EventType.MoveEvent, event_id, event_dependency, event_status)
         self.src = src
         self.dst = dst
-        self.data_size = data_size
+        self.size = size
+        self.data_bits = data_bits
 
 class CrossbarWriteEvent(BaseEvent):
     # write weight into crossbar
-    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, n_rows: int, n_cols: int, PE: PE):
+    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, n_rows: int, n_cols: int, PE: PE, data_bits: int):
         super().__init__(event_name, EventType.CrossbarWriteEvent, event_id, event_dependency, event_status)
         self.n_rows = n_rows
         self.n_cols = n_cols
         self.PE = PE
+        self.data_bits = data_bits
 
 class ActivationEvent(BaseEvent):
     # elementwise activation, executed in the vector module. 
     # Note: ReLU function may be fused with conv or fc and executed in the tile
-    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, input_shape: List[int], activation_name: str, hardware):
+    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, input_shape: List[int], activation_name: str, hardware, data_bits: int):
         super().__init__(event_name, EventType.ActivationEvent, event_id, event_dependency, event_status)
         self.input_shape = input_shape
         self.hardware = hardware
         self.activation_name = activation_name
+        self.data_bits = data_bits
 
 class VectorEvent(BaseEvent):
     # executed in the vector module
-    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, vec_type: VectorEventType, input_1_size, input_2_size, hardware):
+    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, vec_type: VectorEventType, input_1_size, input_2_size, hardware, data_bits: int):
         super().__init__(event_name, EventType.VectorEvent, event_id, event_dependency, event_status)
         self.vec_type = vec_type
         self.input_1_size = input_1_size
         self.input_2_size = input_2_size
+        self.data_bits = data_bits
+        self.hardware = hardware
 
 class ReduceEvent(BaseEvent):
     # executed in the vector module
-    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, reduce_type: ReduceEventType, input_1_size, input_2_size, hardware):
+    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, reduce_type: ReduceEventType, input_1_size, input_2_size, hardware, data_bits: int):
         super().__init__(event_name, EventType.ReduceEvent, event_id, event_dependency, event_status)
         self.reduce_type = reduce_type
         self.input_1_size = input_1_size
         self.input_2_size = input_2_size
+        self.data_bits = data_bits
 
 class FPGABatMatmulEvent(BaseEvent):
-    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, B: int, M: int, N: int, P: int, hardware):
+    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, B: int, M: int, N: int, P: int, hardware, data_bits: int):
         super().__init__(event_name, EventType.FPGABatMatmulEvent, event_id, event_dependency, event_status)
         self.B = B
         self.M = M
         self.N = N
         self.P = P
+        self.data_bits = data_bits
+        self.hardware = hardware
 
 class MergeEvent(BaseEvent):
     # executed in the vector module
-    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, merge_type, input_1_size, input_2_size, hardware):
+    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, merge_type, input_1_size, input_2_size, hardware, data_bits: int):
         super().__init__(event_name, EventType.MergeEvent, event_id, event_dependency, event_status)
         self.input_1_size = input_1_size
         self.input_2_size = input_2_size
         self.merge_type = merge_type
+        self.data_bits = data_bits
