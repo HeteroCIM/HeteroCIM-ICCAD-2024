@@ -40,6 +40,7 @@ class PCIe():
             6: 6.5e-12,
         }
         self.bandwidth = self.single_direction_rate_dict[self.gen] * self.lanes
+        self.busy = False
     def transmission(self, src, dst, data_size, stats = {}):
         T_src, E_src= src.read(data_size)
         T_dst, E_dst = dst.write(data_size)

@@ -13,6 +13,7 @@ class EventType(Enum):
     ReduceEvent = 8
     FPGABatMatmulEvent = 9
     MergeEvent = 10
+    BarrierEvent = 11
 class MergeEventType(Enum):
     MergeAdd = 0 
 class VectorEventType(Enum):
@@ -59,6 +60,13 @@ def vector_event_type_to_string(vector_event_type):
     }
     return vector_event_type_to_string_dict[vector_event_type]
 
+def reduce_event_type_to_string(reduce_event_type):
+    reduce_event_type_to_string_dict = {
+        ReduceEventType.Softmax: "ReduceSoftmax",
+        ReduceEventType.Layernorm: "ReduceLayernorm",
+    }
+    return reduce_event_type_to_string_dict[reduce_event_type]
+
 class BaseEvent(object):
     def __init__(self, event_name: str, event_type: EventType, event_id: int, event_dependency: List, event_status: EventStatus):
         self.event_name = event_name
@@ -67,6 +75,16 @@ class BaseEvent(object):
         self.event_dependency = event_dependency
         self.event_status = event_status
         self.attr = {}
+    def set_attr(self, attr_name, attr_value):
+        self.attr[attr_name] = attr_value
+    def get_attr(self, attr_name):
+        return self.attr[attr_name]
+    def has_attr(self, attr_name):
+        if attr_name in self.attr.keys():
+            return True
+        else:
+            return False
+
 
 class CrossbarMultEvent(BaseEvent):
     def __init__(self, event_name: str, event_id: int, event_dependency: List[BaseEvent], event_status: EventStatus, input_1_shape: List[int], input_2_shape: List[int], hardware):
@@ -105,11 +123,11 @@ class MoveEvent(BaseEvent):
 
 class CrossbarWriteEvent(BaseEvent):
     # write weight into crossbar
-    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, n_rows: int, n_cols: int, PE: PE, data_bits: int):
+    def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, n_rows: int, n_cols: int, hardware: PE, data_bits: int):
         super().__init__(event_name, EventType.CrossbarWriteEvent, event_id, event_dependency, event_status)
         self.n_rows = n_rows
         self.n_cols = n_cols
-        self.PE = PE
+        self.hardware = hardware
         self.data_bits = data_bits
 
 class ActivationEvent(BaseEvent):
@@ -140,6 +158,7 @@ class ReduceEvent(BaseEvent):
         self.input_1_size = input_1_size
         self.input_2_size = input_2_size
         self.data_bits = data_bits
+        self.hardware = hardware
 
 class FPGABatMatmulEvent(BaseEvent):
     def __init__(self, event_name: str, event_id: int, event_dependency: List, event_status: EventStatus, B: int, M: int, N: int, P: int, hardware, data_bits: int):
@@ -159,3 +178,4 @@ class MergeEvent(BaseEvent):
         self.input_2_size = input_2_size
         self.merge_type = merge_type
         self.data_bits = data_bits
+        self.hardware = hardware

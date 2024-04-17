@@ -8,6 +8,7 @@ class RegFile():
         self.write_latency = config.getfloat("RegFile", "write_latency")
         self.power = config.getfloat("RegFile", "power")
         self.size = size
+        self.busy = False
     def read(self, data_size, true_data=False):
         # data_size: bit
         if ~true_data:

@@ -45,6 +45,8 @@ class Parser():
         return self.hardware_dict
     
     def parse_linecode_file(self, file_path):
+        layer_idx = 0
+        event_list_dict = {}
         event_list = []
         file = open(file_path,  "r")
         while True:
@@ -52,14 +54,24 @@ class Parser():
             if linecode == "":
                 break
             event = self.parse_linecode_to_event(linecode)
-            if event:
+            j = json.loads(linecode)
+            if "is_Xbar_write" in j:
+                event.set_attr("is_Xbar_write", True)
+            if event == "barrier":
+                event_list_dict[layer_idx] = event_list.copy()
+                event_list = []
+                layer_idx += 1
+            elif (event is None):
+                print(linecode)
+                assert(0)
+            else:
                 event_list.append(event)
-        return event_list
+        return event_list_dict
 
     def parse_linecode_to_event(self, linecode: str):
         j = json.loads(linecode)
         if j["opcode"] == "Barrier":
-            return None
+            return "barrier"
         event_id = j["event_id"]
         event_name = j["event_name"]
         event_dependency = j["dependency"]
@@ -87,7 +99,7 @@ class Parser():
                 if tile_name not in self.hardware_dict:
                     tile = Tile(tile_name, self.tile_config_path, self.tile_NVM_config_path)
                     self.hardware_dict[tile_name] = tile
-                load_event = LoadEvent(event_name,  event_id, event_dependency, EventStatus.wait, self.hardware_dict["DRAM"], self.hardware_dict[tile_name].tile_in_buf, size, data_bits = self.num_bits)
+                load_event = LoadEvent(event_name, event_id, event_dependency, EventStatus.wait, self.hardware_dict["DRAM"], self.hardware_dict[tile_name].tile_in_buf, size, data_bits = self.num_bits)
                 return load_event
             elif dst_type == "VREG":
                 if "on_FPGA" in j:
@@ -102,6 +114,7 @@ class Parser():
                         self.hardware_dict[tile_name] = tile
                     dst = self.hardware_dict[tile_name].nonlinear_vec_module.nvm_buf
                 load_event = LoadEvent(event_name,  event_id, event_dependency, EventStatus.wait, self.hardware_dict["DRAM"], dst, size, data_bits = self.num_bits)
+                return load_event
             else:
                 print(dst_type)
                 assert(0)
@@ -165,6 +178,12 @@ class Parser():
                     tile = Tile(tile_name, self.tile_config_path, self.tile_NVM_config_path)
                     self.hardware_dict[tile_name] = tile
                 dst = self.hardware_dict[tile_name].tile_in_buf
+            elif dst_type == "TileOutBuf":
+                tile_name = "tile_" + dst_name.split("_" + dst_type)[0]
+                if tile_name not in self.hardware_dict:
+                    tile = Tile(tile_name, self.tile_config_path, self.tile_NVM_config_path)
+                    self.hardware_dict[tile_name] = tile
+                dst = self.hardware_dict[tile_name].tile_out_buf
             elif dst_type == "FPGABuf":
                 if self.fpga_name not in self.hardware_dict:
                     fpga = FPGA(self.fpga_name, self.FPGA_config_path)
@@ -184,6 +203,8 @@ class Parser():
                     dst = self.hardware_dict[tile_name].nonlinear_vec_module.nvm_buf # TODO: check
             elif dst_type == "Buf": # global buffer
                 assert(0), "TODO: support"
+            else:
+                assert(0)
             mv_event = MoveEvent(event_name, event_id, event_dependency, EventStatus.wait, src, dst, size, data_bits = self.num_bits)
             return mv_event
         elif j["opcode"] == "FPGABatMatmul":

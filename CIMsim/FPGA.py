@@ -23,6 +23,7 @@ class FPGA():
             assert(0), "For now, we only support coarse-grained OPU model for FPGA config"
         self.FPGA_buf = Buffer(self.name + "_FPGA_buf", config_path, "FPGA Buffer", self)
         self.NVM_reg = Buffer(self.name + "_NVM_vreg", config_path, "NVM VREG", self)
+        self.busy = False
 
     def compute_batmatmul(self, B, M, N, P, data_bits, stats = {}):
         T, E = self.hardware.compute_batmatmul(B, M, N, P, data_bits)
@@ -95,7 +96,7 @@ class OPU():
             if nvm_type not in self.vector_throughput_dict.keys():
                 print(nvm_type)
                 assert(0)
-            else: 
+            else:
                 throughput = self.vector_throughput_dict[nvm_type][data_bits]
             
             

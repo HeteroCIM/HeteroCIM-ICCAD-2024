@@ -19,6 +19,7 @@ class MUX():
             self.energy = self.mux_2_1_power * (2 ** np.ceil(math.log(2, self.ways)) - 1) * self.latency
         # MUX area is small enough to be ignored
         self.area = config.getfloat("MUX", "MUX_area") if config.getfloat("MUX", "MUX_area") != -1 else 0
+        self.busy = False
     def execute(self):
         return self.latency, self.energy
     def getArea(self):

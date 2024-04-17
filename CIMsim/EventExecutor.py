@@ -13,7 +13,7 @@ class eventExecuter():
     def execute_events(self, event_list):
         ret_dict = {}
         for event in event_list:
-            print(event_to_string(event))
+            # print(event_to_string(event))
             event_T, event_E, stats = self.execute_event(event)
             ret_dict[event] = tuple((event_T, event_E, stats))
         return ret_dict
@@ -46,8 +46,8 @@ class eventExecuter():
             event_E = src_read_E + dst_write_E
             return event_T, event_E, global_stats
         elif event.event_type == EventType.CrossbarWriteEvent:
-            assert isinstance(event.PE, PE), "write event must be executed in a PE"
-            event_T, event_E = event.PE.update(event.n_rows, event.n_cols, stats = global_stats)
+            assert isinstance(event.hardware, PE), "write event must be executed in a PE"
+            event_T, event_E = event.hardware.update(event.n_rows, event.n_cols, stats = global_stats)
             return event_T, event_E, global_stats
 
         elif event.event_type == EventType.MoveEvent:
@@ -66,8 +66,11 @@ class eventExecuter():
                     event_E = src_read_E + dst_write_E
                     return event_T, event_E, global_stats
                 else:
-                    print(event.src.parent, event.dst.parent)
-                    assert(0)
+                    src_read_T, src_read_E = event.src.read(event.size * event.data_bits, stats = global_stats)
+                    dst_write_T, dst_write_E = event.dst.write(event.size * event.data_bits, stats = global_stats)
+                    event_T = max(src_read_T, dst_write_T)
+                    event_E = src_read_E + dst_write_E
+                    return event_T, event_E, global_stats
             elif isinstance(event.src, Buffer) and isinstance(event.dst, PE):
                 # data transmission from global buffer to PE
                 src_read_T, src_read_E = event.src.read(event.size * event.data_bits, stats = global_stats)
@@ -114,6 +117,7 @@ class eventExecuter():
                 event_E = src_read_E + dst_write_E
                 return event_T, event_E, global_stats
             else:
+                print(event.src, event.dst)
                 assert(0)
         elif event.event_type == EventType.CrossbarMultEvent:
             assert isinstance(event.hardware, PE), "matmul must be calculated in PE!"
@@ -129,20 +133,38 @@ class eventExecuter():
                 event_T += cal_T * event.input_1_shape[0]
                 event_E += cal_E * event.input_1_shape[0]
             return event_T, event_E, global_stats
-        elif event.event_type == EventType.ActivationEvent:
-            event_T, event_E = event.hardware.compute("activation", event.activation_name, input_shape = event.input_shape, stats = global_stats) 
-            return event_T, event_E, global_stats
+        # elif event.event_type == EventType.ActivationEvent:
+        #     event_T, event_E = event.hardware.compute("Activation", event.activation_name, input_shape = event.input_shape, stats = global_stats) 
+        #     return event_T, event_E, global_stats
         elif event.event_type == EventType.VectorEvent:
             if isinstance(event.hardware, FPGA):
                 nvm_type = vector_event_type_to_string(event.vec_type)
                 event_T, event_E = event.hardware.compute_nvm(nvm_type, event.input_1_size, event.data_bits, stats = global_stats) 
                 return event_T, event_E, global_stats
-            elif isinstance(event.hardware, Tile):
+            elif isinstance(event.hardware, NonlinearVecModule):
+                event_T, event_E = event.hardware.compute("Vector", vector_event_type_to_string(event.vec_type), [event.input_1_size], event.data_bits, stats = global_stats) 
+                return event_T, event_E, global_stats
+            else:
+                print(event.hardware)
                 assert(0)
+        elif event.event_type == EventType.ReduceEvent:
+            if isinstance(event.hardware, FPGA):
+                nvm_type = reduce_event_type_to_string(event.reduce_type)
+                event_T, event_E = event.hardware.compute_nvm(nvm_type, event.input_1_size, event.data_bits, stats = global_stats) 
+                return event_T, event_E, global_stats
+            elif isinstance(event.hardware, NonlinearVecModule):
+                event_T, event_E = event.hardware.compute("Reduce", reduce_event_type_to_string(event.reduce_type), [event.input_1_size], event.data_bits, stats = global_stats) 
+                return event_T, event_E, global_stats
             else:
                 assert(0)
         elif event.event_type == EventType.FPGABatMatmulEvent:
             event_T, event_E = event.hardware.compute_batmatmul(event.B, event.M, event.N, event.P, event.data_bits, stats = global_stats)
             return event_T, event_E, global_stats
+        elif event.event_type == EventType.MergeEvent:
+            # print(event.merge_type, event.hardware)
+            if event.merge_type == MergeEventType.MergeAdd:
+                mac_T, mac_E = event.hardware.compute(event.input_1_size, global_stats)
+                return mac_T, mac_E, global_stats
+            assert(0)
         else:
             assert(0)

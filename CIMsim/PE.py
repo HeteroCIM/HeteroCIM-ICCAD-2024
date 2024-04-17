@@ -57,6 +57,7 @@ class PE():
         self.weight_bits = config.getint("crossbar", "weight_bits")
         self.mem_bits = config.getint("crossbar", "mem_bits")
         self.name = name
+        self.busy = False
         
 
         

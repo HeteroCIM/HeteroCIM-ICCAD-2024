@@ -13,6 +13,7 @@ class Crossbar():
         self.mem_write_latency = config.getfloat("crossbar", "mem_write_latency")
         self.mem_write_energy = config.getfloat("crossbar", "mem_write_energy")
         self.cell_area = config.getfloat("crossbar", "cell_area")
+        self.busy = False
 
         self.type = config["crossbar"]["type"]
         if self.type == "RRAM":

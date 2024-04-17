@@ -13,6 +13,7 @@ class Buffer():
         self.buffer_frequency = config.getfloat(key, "buffer_frequency") if config.getfloat(key, "buffer_frequency") != -1 else 300e9
         self.name = name
         self.parent = parent
+        self.busy = False
         self.area_dict = {
             32768: 21240.78, #4kB
             65536: 25091.68, #8kB

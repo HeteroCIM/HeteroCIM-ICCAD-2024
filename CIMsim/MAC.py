@@ -13,6 +13,7 @@ class MAC():
         power = config.getfloat("MAC", "MAC_power") if config.getfloat("MAC", "MAC_power") != -1 else 6.65e-3
         self.energy = power * self.latency
         self.area = config.getfloat("MAC", "MAC_area") if config.getfloat("MAC", "MAC_area") != -1 else 1283.23
+        self.busy = False
     def compute(self):
         return self.latency, self.energy
     def getArea(self):

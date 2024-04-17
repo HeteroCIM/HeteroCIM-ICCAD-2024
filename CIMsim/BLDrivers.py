@@ -15,6 +15,7 @@ class DAC():
         self.power = config.getfloat("DAC", "power") if config.getfloat("DAC", "power") != -1 else 0.004 * 2 ** self.precision
         self.area = config.getfloat("DAC", "area") if config.getfloat("DAC", "area") != -1 else 170 * 2 ** self.precision
         self.convert_energy = self.convert_latency * self.power
+        self.busy = False
     def convert(self):
         return self.convert_latency, self.convert_energy
     def getArea(self):
@@ -29,6 +30,7 @@ class PWM():
         self.tick = config.getfloat("PWM", "tick")
         self.area = config.getfloat("PWM", "area")
         self.power = config.getfloat("PWM", "power")
+        self.busy = False
 
     def convert(self, precision = -1):
         if precision == -1:

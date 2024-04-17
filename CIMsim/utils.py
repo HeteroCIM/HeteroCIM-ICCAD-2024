@@ -39,7 +39,8 @@ def event_to_string(event):
             EventType.VectorEvent: "VectorEvent",
             EventType.ReduceEvent: "ReduceEvent",
             EventType.FPGABatMatmulEvent: "FPGABatMatmulEvent",
-            EventType.MergeEvent: "MergeEvent"
+            EventType.MergeEvent: "MergeEvent",
+            EventType.BarrierEvent: "BarrierEvent"
         }
         return event_type_to_string_dict[event_type]
     str_type = event_type_to_string(event.event_type)

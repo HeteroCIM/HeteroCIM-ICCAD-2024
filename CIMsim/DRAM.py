@@ -31,6 +31,7 @@ class DRAM():
             self.trace_count = 0
         else:
             assert(0), "cannot find dram model backend. Now support CIMsim and DRAMsim3 only"
+        self.busy = False
 
     def read(self, data_size, stats = {}, ):
         # data_size: bit

@@ -13,6 +13,24 @@ from CIMsim.NonlinearVecModule import *
 import numpy as np
 
 # a crossbar array tile
+
+class MergeUnit():
+    def __init__(self, n_macs, config_path):
+        self.n_macs = n_macs
+        self.mac = MAC(config_path)
+        self.busy = False
+    def compute(self, input_size, stats = {}):
+        mac_T, mac_E = self.mac.compute()
+        mac_T = mac_T * np.ceil(input_size / self.n_macs)
+        mac_E *= input_size
+        local_stats = {}
+        local_stats["merge_add_T"] = mac_T
+        local_stats["merge_add_E"] = mac_E
+        merge_stats_add(stats, local_stats)
+        return mac_T, mac_E
+    def get_area(self):
+        return self.mac.get_area() * self.n_macs
+
 class Tile(): 
     def __init__(self, name, config_path = "", nvm_path = ""):
         config = cp.ConfigParser()
@@ -31,7 +49,9 @@ class Tile():
             self.nonlinear_vec_module = NonlinearVecModule(name = "nvm", config_path = nvm_path)
         else:
             assert(0), "for now each tile should have NVM module"
-        self.merge_unit = MAC(config_path)
+        n_macs = self.PEs[0].crossbar.n_cols
+        self.merge_unit = MergeUnit(n_macs, config_path)
+        self.busy = False
     def getArea(self, stats={}):
         PE_area = 0
         for pe in self.PEs:

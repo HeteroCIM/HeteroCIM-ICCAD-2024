@@ -7,5 +7,6 @@ class Adder():
         assert config_path != "", "cannot find config file!"
         self.latency = config.getfloat("Adder", "Adder_latency")
         self.energy = config.getfloat("Adder", "Adder_energy")
+        self.busy = False
     def compute(self, input_len):
         return self.latency, self.energy
