@@ -48,8 +48,8 @@ class Tile():
         if nvm_path != "":
             self.nonlinear_vec_module = NonlinearVecModule(name = "nvm", config_path = nvm_path)
         else:
-            assert(0), "for now each tile should have NVM module"
-        n_macs = self.PEs[0].crossbar.n_cols
+            print("Warning: no NVM is created for this tile")
+        n_macs = self.PEs[0].crossbar.cb.n_cols
         self.merge_unit = MergeUnit(n_macs, config_path)
         self.busy = False
     def getArea(self, stats={}):

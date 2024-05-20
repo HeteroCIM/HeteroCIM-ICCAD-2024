@@ -40,14 +40,62 @@ class PCIe():
             6: 6.5e-12,
         }
         self.bandwidth = self.single_direction_rate_dict[self.gen] * self.lanes
+        self.util = config.getfloat("PCIe", "utilization") if config.getfloat("PCIe", "utilization") != -1 else 0.7
         self.busy = False
     def transmission(self, src, dst, data_size, stats = {}):
         T_src, E_src= src.read(data_size)
         T_dst, E_dst = dst.write(data_size)
-        T_bus = data_size / self.bandwidth
+        T_bus = data_size / self.bandwidth / self.util
         E_bus = data_size * self.energy_efficiency_dict[self.gen]
-        # print("T_src: ", T_src, "T_dst", T_dst, "T_bus", T_bus)
-        # print("src: ", src, "dst", dst)
+        T = max(T_src, T_dst, T_bus)
+        E = E_src + E_dst + E_bus
+        return T, E
+
+
+class UCIe():
+    def __init__(self, name, config_path):
+        config = cp.ConfigParser()
+        config.read(config_path)
+        assert config_path != "", "cannot find config file!"
+        self.name = name
+        self.lanes = config.getint("UCIe", "lanes")
+        self.package_type = config["UCIe"]["package_type"]
+        self.PCIe_type = "UCIe1.0 x" + str(self.lanes)
+        self.rate_per_lane = 32e9 * 128 / 130 # PCIe gen5
+        self.energy_efficiency_dict = {
+            "standard": 0.5e-12,
+            "advanced": 0.25e-12
+        }
+        self.bandwidth = self.rate_per_lane * self.lanes
+        self.util = config.getfloat("UCIe", "utilization") if config.getfloat("UCIe", "utilization") != -1 else 0.7
+        self.latency = 2e-9
+        self.busy = False
+    def transmission(self, src, dst, data_size, stats = {}):
+        T_src, E_src= src.read(data_size)
+        T_dst, E_dst = dst.write(data_size)
+        T_bus = self.latency + data_size / self.bandwidth / self.util
+        E_bus = data_size * self.energy_efficiency_dict[self.package_type]
+        T = max(T_src, T_dst, T_bus)
+        E = E_src + E_dst + E_bus
+        return T, E
+
+class CXL():
+    # CXL3.0
+    def __init__(self, name, config_path):
+        config = cp.ConfigParser()
+        config.read(config_path)
+        assert config_path != "", "cannot find config file!"
+        self.name = name
+        self.transmission_rate = 64e9 * 128 / 130 # PCIe gen5
+        self.energy_efficiency = 6.5e-12
+        self.bandwidth = self.transmission_rate
+        self.util = config.getfloat("CXL", "utilization") if config.getfloat("CXL", "utilization") != -1 else 0.7
+        self.busy = False
+    def transmission(self, src, dst, data_size, stats = {}):
+        T_src, E_src= src.read(data_size)
+        T_dst, E_dst = dst.write(data_size)
+        T_bus = data_size / self.bandwidth / self.util
+        E_bus = data_size * self.energy_efficiency
         T = max(T_src, T_dst, T_bus)
         E = E_src + E_dst + E_bus
         return T, E

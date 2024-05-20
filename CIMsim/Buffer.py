@@ -9,7 +9,7 @@ class Buffer():
         self.access_cycles = config.getfloat(key, "access_latency") if config.getfloat(key, "access_latency") != -1 else 1
         self.energy_per_bit = config.getfloat(key, "energy_per_bit") if config.getfloat(key, "energy_per_bit") != -1 else 1e-12
         self.size = config.getfloat(key, "size") if config.getfloat(key, "size") != -1 else 524288
-        self.bit_width = config.getfloat(key, "bit_width") if config.getfloat(key, "bit_width") != -1 else 256
+        self.bit_width = config.getfloat(key, "bit_width") if config.getfloat(key, "bit_width") != -1 else 128*32
         self.buffer_frequency = config.getfloat(key, "buffer_frequency") if config.getfloat(key, "buffer_frequency") != -1 else 300e9
         self.name = name
         self.parent = parent
@@ -32,26 +32,24 @@ class Buffer():
             self.area = self.area_dict[self.size]
         else:
             assert(0), "no default area info for buffer size: " + str(self.size) + ". Please enter buffer area manually"
-    def read(self, data_size, stats = {}, true_data=False):
+    def read(self, data_size, stats = {}):
         # data_size: bit
-        if ~true_data:
-            latency = (self.access_cycles + data_size / self.bit_width) / self.buffer_frequency
-            energy = data_size * self.energy_per_bit
-            local_stats = {}
-            local_stats[self.name + "_buf_r_T"] = latency
-            local_stats[self.name + "_buf_r_E"] = energy
-            merge_stats_add(stats, local_stats)
-            return latency, energy
-    def write(self, data_size, stats = {}, true_data=False):
+        latency = (self.access_cycles + data_size / self.bit_width) / self.buffer_frequency
+        energy = data_size * self.energy_per_bit
+        local_stats = {}
+        local_stats[self.name + "_buf_r_T"] = latency
+        local_stats[self.name + "_buf_r_E"] = energy
+        merge_stats_add(stats, local_stats)
+        return latency, energy
+    def write(self, data_size, stats = {}):
         # data_size: bit
-        if ~true_data:
-            latency = (self.access_cycles + data_size / self.bit_width) / self.buffer_frequency
-            energy = data_size * self.energy_per_bit
-            local_stats = {}
-            local_stats[self.name + "_buf_w_T"] = latency
-            local_stats[self.name + "_buf_w_E"] = energy
-            merge_stats_add(stats, local_stats)
-            return latency, energy
+        latency = (self.access_cycles + data_size / self.bit_width) / self.buffer_frequency
+        energy = data_size * self.energy_per_bit
+        local_stats = {}
+        local_stats[self.name + "_buf_w_T"] = latency
+        local_stats[self.name + "_buf_w_E"] = energy
+        merge_stats_add(stats, local_stats)
+        return latency, energy
     def getArea(self):
         area = self.area_dict[self.size]
         return area

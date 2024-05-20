@@ -60,6 +60,20 @@ def vector_event_type_to_string(vector_event_type):
     }
     return vector_event_type_to_string_dict[vector_event_type]
 
+_event_type_to_string_dict = {
+    EventType.CrossbarMultEvent: "CrossbarMultEvent",
+    EventType.LoadEvent: "LoadEvent",
+    EventType.StoreEvent: "StoreEvent",
+    EventType.MoveEvent: "MoveEvent",
+    EventType.CrossbarWriteEvent: "CrossbarWriteEvent",
+    EventType.ActivationEvent: "ActivationEvent",
+    EventType.VectorEvent: "VectorEvent",
+    EventType.ReduceEvent: "ReduceEvent",
+    EventType.FPGABatMatmulEvent: "FPGABatMatmulEvent",
+    EventType.MergeEvent: "MergeEvent",
+    EventType.BarrierEvent: "BarrierEvent"
+}
+
 def reduce_event_type_to_string(reduce_event_type):
     reduce_event_type_to_string_dict = {
         ReduceEventType.Softmax: "ReduceSoftmax",
@@ -84,6 +98,12 @@ class BaseEvent(object):
             return True
         else:
             return False
+    def to_string(self):
+        type_str = _event_type_to_string_dict[self.event_type]
+        id_str = self.event_id
+        name_str = self.event_name
+        event_str = "event_id: " + str(id_str) + "  event_name: " + name_str + "  event_type: " + type_str
+        return event_str
 
 
 class CrossbarMultEvent(BaseEvent):

@@ -11,29 +11,27 @@ from CIMsim.NonlinearVecModule import *
 
 # dram = DRAM("config.ini")
 # print(dram.size)def 
-dram = DRAM(name="dram", config_path="ISSCC20_system.ini")
-global_buffer = Buffer(name = "g_buf", config_path = "ISSCC20_chip.ini", key = "Global Buffer")
-tile1 = Tile(name = "tile1", config_path = "ISSCC20_tile_1.ini")
-tile2 = Tile(name = "tile2", config_path = "ISSCC20_tile_2.ini")
-nonlinear_vec_module = NonlinearVecModule(name = "nvm", config_path = "ISSCC20_nvm.ini")
+dram = DRAM(name="dram", config_path="config_files/ISSCC20_dram.ini")
+global_buffer = Buffer(name = "g_buf", config_path = "config_files/ISSCC20_chip.ini", key = "Global Buffer")
+tile1 = Tile(name = "tile1", config_path = "config_files/ISSCC20_tile_1.ini")
+tile2 = Tile(name = "tile2", config_path = "config_files/ISSCC20_tile_2.ini")
+# nonlinear_vec_module = NonlinearVecModule(name = "nvm", config_path = "ISSCC20_nvm.ini")
+exe = eventExecuter()
 
 def eventDriven():
-    ld1 = LoadEvent(event_name = "ld1", event_id = 1, event_dependency = [], event_status = EventStatus.wait, src=dram, dst=tile1, data_size=784*8)
-    mm1 = CrossbarMultEvent(event_name = "mm1", event_id = 2, event_dependency = [ld1], event_status = EventStatus.wait, input_1_shape = [1,784], input_2_shape = [784,100], hardware = tile1)
-    mv1 = MoveEvent(event_name= "mv1", event_id=3, event_dependency = [mm1], event_status=EventStatus.wait, src=tile1, dst=tile2, data_size=100*8)
-    mm2 = CrossbarMultEvent(event_name = "mm2", event_id = 3, event_dependency = [mv1], event_status = EventStatus.wait, input_1_shape = [1,100], input_2_shape = [100,10], hardware = tile2)
+    ld1 = LoadEvent(event_name = "ld1", event_id = 1, event_dependency = [], event_status = EventStatus.wait, src=dram, dst=tile1.tile_in_buf, size=784, data_bits=8)
+    mm1 = CrossbarMultEvent(event_name = "mm1", event_id = 2, event_dependency = [ld1], event_status = EventStatus.wait, input_1_shape = [1,784], input_2_shape = [784,100], hardware = tile1.PEs[0])
+    mv1 = MoveEvent(event_name= "mv1", event_id=3, event_dependency = [mm1], event_status=EventStatus.wait, src=tile1.tile_out_buf, dst=tile2.tile_in_buf, size=100, data_bits=8)
+    mm2 = CrossbarMultEvent(event_name = "mm2", event_id = 3, event_dependency = [mv1], event_status = EventStatus.wait, input_1_shape = [1,100], input_2_shape = [100,10], hardware = tile2.PEs[0])
     # st1 = StoreEvent(event_name = "st1", event_id = 1, event_dependency = [], event_status = EventStatus.wait, src=tile2, dst=dram, data_size=10*8)
     # event_list = [ld1, mm1, mv1, mm2] 
     event_list = [ld1, mm1, mv1, mm2]
 
-
-    ld2 = LoadEvent(event_name = "ld2", event_id = 1, event_dependency = [], event_status = EventStatus.wait, src=dram, dst=tile1, data_size=784*100*8)
-    wmem1 = CrossbarWriteEvent(event_name = "wmem1", event_id = 1, event_dependency = [], event_status = EventStatus.wait, n_rows = 784, n_cols = 100, tile = tile1)
-    ld3 = LoadEvent(event_name = "ld3", event_id = 1, event_dependency = [], event_status = EventStatus.wait, src=dram, dst=tile2, data_size=100*10*8)
-    wmem2 = CrossbarWriteEvent(event_name = "wmem2", event_id = 1, event_dependency = [], event_status = EventStatus.wait, n_rows = 100, n_cols = 10, tile = tile2)
-    wmem_event_list = [ld2, wmem1, ld3, wmem2] 
-
-
+    ld2 = LoadEvent(event_name = "ld2", event_id = 1, event_dependency = [], event_status = EventStatus.wait, src=dram, dst=tile1.tile_in_buf, size=784*100, data_bits=8)
+    wmem1 = CrossbarWriteEvent(event_name = "wmem1", event_id = 1, event_dependency = [], event_status = EventStatus.wait, n_rows = 784, n_cols = 100, hardware = tile1.PEs[0], data_bits = 8)
+    ld3 = LoadEvent(event_name = "ld3", event_id = 1, event_dependency = [], event_status = EventStatus.wait, src=dram, dst=tile2.tile_in_buf, size=100*10, data_bits=8)
+    wmem2 = CrossbarWriteEvent(event_name = "wmem2", event_id = 1, event_dependency = [], event_status = EventStatus.wait, n_rows = 100, n_cols = 10, hardware = tile2.PEs[0], data_bits = 8)
+    wmem_event_list = [ld2, wmem1, ld3, wmem2]
 
     inf_T  = 0
     inf_E = 0
@@ -42,7 +40,7 @@ def eventDriven():
     for event in event_list:
         dict_detail = {}
         print(event.event_name)
-        T, E, stats = executeEvent(event)
+        T, E, stats = exe.execute_event(event)
         inf_T += T
         inf_E += E
         # print(stats)
@@ -52,7 +50,7 @@ def eventDriven():
     for event in wmem_event_list:
         dict_detail = {}
         print(event.event_name)
-        T, E, stats = executeEvent(event)
+        T, E, stats = exe.execute_event(event)
         program_T += T
         program_E += E
         # print(stats)

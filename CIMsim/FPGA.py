@@ -79,7 +79,7 @@ class OPU():
         self.NVM_power = 1.722 # watt
         
     def compute_batmatmul(self, B, M, N, P, data_bits):
-        num_operations = N * M * N * P
+        num_operations = B * M * N * P
         T = np.ceil(num_operations / self.n_MAC / 2) / self.frequency
         E = T * self.PE_power
         return T, E
@@ -99,7 +99,8 @@ class OPU():
             else:
                 throughput = self.vector_throughput_dict[nvm_type][data_bits]
             
-            
+        # TODO:check
+        throughput = throughput * 2.5
         T = np.ceil(input_size / throughput) / self.frequency
         E = T * self.PE_power
         return T, E

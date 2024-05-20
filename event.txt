@@ -1550,7 +1550,6 @@ layer_idx: 3   event_idx: 1548               event: layer_4_move_nvm_input
 layer_idx: 3   event_idx: 1549               event: layer_4_fused_ElwDiv             
 layer_idx: 3   event_idx: 1550               event: layer_4_fused_softmax            
 layer_idx: 3   event_idx: 1551               event: layer_4_move_nvm_output          
-layer_idx: 4   event_idx: 1552               event: layer_5_load_x_0                 
 layer_idx: 4   event_idx: 1553               event: layer_5_load_x_1                 
 layer_idx: 4   event_idx: 1554               event: layer_5_FPGA_bmult               
 layer_idx: 5   event_idx: 1555               event: layer_6_load_w                   

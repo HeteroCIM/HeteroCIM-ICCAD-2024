@@ -36,7 +36,8 @@ class DRAM():
     def read(self, data_size, stats = {}, ):
         # data_size: bit
         if self.model_type == "CIMsim":
-            latency = (self.read_access_latency + data_size / self.bit_width) / self.DRAM_frequency
+            util_rate = 0.7
+            latency = (self.read_access_latency + data_size / self.bit_width / util_rate) / self.DRAM_frequency
             energy = self.energy_per_bit * data_size
         elif self.model_type == "DRAMsim3":
             n_requests = int(data_size / self.bus_width)
@@ -46,7 +47,7 @@ class DRAM():
             os.system("python " + self.DRAMsim3_trace_gen_path + " -n " + str(n_requests) + " -b " +  str(self.bus_width) + " -r 100000000 -s stream -f dramsim3 -o " +  self.DRAMsim3_trace_dir_path + " -m " + name)
             # run DRAMsim3
             # print("./" + self.DRAMsim3_exe_path + " " + self.DRAMsim3_config_filename + " -c 100000 -t " +  self.DRAMsim3_trace_dir_path + name)
-            os.system("./" + self.DRAMsim3_exe_path + " " + self.DRAMsim3_config_filename + " -c 100000 -t " +  self.DRAMsim3_trace_dir_path + name + " -o " + self.DRAMsim3_res_dir_path)
+            os.system("./" + self.DRAMsim3_exe_path + " " + self.DRAMsim3_config_filename + " -c 10000000 -t " +  self.DRAMsim3_trace_dir_path + name + " -o " + self.DRAMsim3_res_dir_path)
             # read results
             with open(self.DRAMsim3_res_dir_path + "dramsim3.json",'r', encoding='utf8') as js:
                 json_data = json.load(js)
