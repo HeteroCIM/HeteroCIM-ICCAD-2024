@@ -1546,7 +1546,7 @@ time: 0.0018941567168344689
 ---------------------------------layer3---------------------------------
 time: 0                       event_1545: layer_4_load_x_0            
 time: 0.00026624              event_1546: layer_4_load_x_1            
-time: 0.00053248              event_1547: layer_4_FPGA_bmult          
+time: 0.00053248              event_1547: layer_4_CGRA_bmult          
 time: 0.0009693866666666667   event_1548: layer_4_move_nvm_input      
 time: 0.0011878433333333334   event_1549: layer_4_fused_ElwDiv        
 time: 0.0015373700000000001   event_1550: layer_4_fused_softmax       
@@ -1554,7 +1554,7 @@ time: 0.0021272866666666667   event_1551: layer_4_move_nvm_output
 time: 0.0023457433333333336   
 ---------------------------------layer4---------------------------------
 time: 0                       event_1553: layer_5_load_x_1            
-time: 0.00026624              event_1554: layer_5_FPGA_bmult          
+time: 0.00026624              event_1554: layer_5_CGRA_bmult          
 time: 0.0007031466666666667   
 ---------------------------------layer5---------------------------------
 time: 0                       event_1557: layer_6_load_x              event_2071: layer_6_load_res            

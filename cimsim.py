@@ -1,21 +1,21 @@
 import os
-from CIMsim.DRAM import *
-from CIMsim.Crossbar import *
-from CIMsim.Event import *
-from CIMsim.Tile import *
-from CIMsim.Buffer import *
-from CIMsim.EventExecutor import *
-from CIMsim.NonlinearVecModule import *
-from CIMsim.Parser import *
-from CIMsim.utils import *
-from CIMsim.Simulator import *
+from HeteroCIM.DRAM import *
+from HeteroCIM.Crossbar import *
+from HeteroCIM.Event import *
+from HeteroCIM.Tile import *
+from HeteroCIM.Buffer import *
+from HeteroCIM.EventExecutor import *
+from HeteroCIM.NonlinearVecModule import *
+from HeteroCIM.Parser import *
+from HeteroCIM.utils import *
+from HeteroCIM.Simulator import *
 import time
 t1 = time.time()
-sim = Simulator(tile_config_path = "test_tile_1.ini", DRAM_config_path = "test_dram.ini", FPGA_config_path ="test_fpga.ini", protocol_config_path = "test_Noc.ini", nvm_config_path = "test_on_tile_nvm.ini")
+sim = Simulator(tile_config_path = "test_tile_1.ini", DRAM_config_path = "test_dram.ini", CGRA_config_path ="test_fpga.ini", protocol_config_path = "test_Noc.ini", nvm_config_path = "test_on_tile_nvm.ini")
 sim.build_inter_die_protocol()
-# sim.parse_json("/home/siyuan/CIMsim_Plus/examples/linecode_vgg16.json")
-# sim.parse_json("/home/siyuan/CIMsim_Plus/examples/linecode_bert_block.json")
-sim.parse_json("/home/siyuan/CIMsim_Plus/examples/linecode_bert_small.json")
+# sim.parse_json("/home/siyuan/HeteroCIM1.0/examples/linecode_vgg16.json")
+# sim.parse_json("/home/siyuan/HeteroCIM1.0/examples/linecode_bert_block.json")
+sim.parse_json("/home/siyuan/HeteroCIM1.0/examples/linecode_bert_small.json")
 sim.print_event_list("event.txt")
 # t1 = time.time()
 sim.execute_event()

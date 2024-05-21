@@ -1,11 +1,11 @@
 import os
-from CIMsim.DRAM import *
-from CIMsim.Crossbar import *
-from CIMsim.Event import *
-from CIMsim.Tile import *
-from CIMsim.Buffer import *
-from CIMsim.EventExecutor import *
-from CIMsim.NonlinearVecModule import *
+from HeteroCIM.DRAM import *
+from HeteroCIM.Crossbar import *
+from HeteroCIM.Event import *
+from HeteroCIM.Tile import *
+from HeteroCIM.Buffer import *
+from HeteroCIM.EventExecutor import *
+from HeteroCIM.NonlinearVecModule import *
 # crossbar = Crossbar("config.ini")
 # print(crossbar.compute(64,64))
 

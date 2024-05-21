@@ -1,4 +1,4 @@
-from CIMsim.NonlinearVecModule import *
+from HeteroCIM.NonlinearVecModule import *
 import copy
 # class evt():
 #     def __init__(self, idx):
