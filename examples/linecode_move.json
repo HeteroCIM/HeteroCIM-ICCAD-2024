@@ -1,2 +1,0 @@
-{"basicblock_name":"layer_4","dependency":[],"dst_name":"layer_4_CGRABuf","dst_type":"CGRABuf","event_id":1545,"event_name":"layer_4_load_x_0","on_CGRA":1,"opcode":"Move","size":393216,"src_name":"layer_3_TileOutBuf","src_type":"TileOutBuf"}
-{"basicblock_name":"layer_4","dependency":[],"dst_name":"layer_4_CGRABuf","dst_type":"CGRABuf","event_id":1546,"event_name":"layer_4_load_x_1","on_CGRA":1,"opcode":"Move","size":393216,"src_name":"layer_2_TileOutBuf","src_type":"TileOutBuf"}

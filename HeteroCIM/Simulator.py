@@ -105,8 +105,7 @@ class Simulator():
                 print(content, textfile)
         print("total_T: ", total_T, "total_E: ", total_E)
 
-    def schedule(self, trace_output_path = "sche_trace.txt", remove_xbar_write = True):
-        print("-----------start scheduling------------")
+    def schedule(self, trace_output_path = "outputs/sche_trace.txt", remove_xbar_write = True):
         self.scheduler = Scheduler(self.event_T_E_dict)
         scheduler_event_dict = self.scheduler.remove_xbar_write(remove_xbar_write)
         raw_layer_T_E_dict = self.get_raw_layer_T_E(scheduler_event_dict)
@@ -118,8 +117,6 @@ class Simulator():
         for layer_idx in sche_latency_dict.keys():
             sched_layer_T_E_dict[layer_idx][0] = sche_latency_dict[layer_idx]
         self.sched_layer_T_E_dict = sched_layer_T_E_dict
-        print("-----------scheduling ends-------------")
-        # return sched_layer_T_E_dict
 
     def print_sche_trace(self, dict, file_path = None):
         assert(file_path is not None)
