@@ -3,6 +3,5 @@ This is the temporary repo for the open source code of Paper 716: HeteroCIM: a T
 
 Open-source process: 
 
-Simulator --- around 5/20 <br />
-Compiler --- around 6/15 <br />
-Hardware builder --- around 6/30 or early July <br />
+Simulator and compiler --- we are working to file our code and develop a user-friendly UI. Could be released in early July <br />
+Hardware builder --- late July <br />
